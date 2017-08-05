@@ -122,3 +122,11 @@ Foxy.stop = () => record.stop()
 
 logger.log('debug', 'Initializing Foxy Process.');
 Foxy.start(Foxy.init());
+/*
+app.get('/callback', function (req, res) {
+  res.send('Got a callback!')
+});
+
+app.listen(3001, function () {
+  logger.log('debug', 'initializing server');
+});*/
