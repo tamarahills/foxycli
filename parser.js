@@ -4,11 +4,14 @@
 
 "use strict";
 const fs = require('fs');
-//const request = require('request');
 const rp = require('request-promise');
-
 const Logger = require('filelogger');
+var SpotifyConn= require('./spotify');
+
 var logger = new Logger('debug', 'error', 'foxy.log');
+
+var spotify = new SpotifyConn();
+
 
 function Parser() {}
 
@@ -17,7 +20,9 @@ const FOXY_COMMANDS = {
   'NEXT': 'NEXT SLIDE',
   'SHUT': 'SHUT UP',
   'WEATHER': 'WEATHER',
-  'BOOKMARK': 'BOOKMARK'
+  'BOOKMARK': 'BOOKMARK',
+  'TIMER': 'TIMER',
+  'SPOTIFY': 'SPOTIFY'
 };
 
 const CITY_NAMES = {
@@ -55,6 +60,7 @@ const shimOptions = {
 };
 
 
+
 Parser.prototype.parseResults = function(foxyBuffer, callback) {
   asrOptions.body = foxyBuffer;
 
@@ -84,14 +90,25 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
       //Determine the action from the API.AI intent parser
       switch (jsonBody.result.action) {
         case 'weather':
+          console.log('weather is action');
           payload.cmd = FOXY_COMMANDS.WEATHER;
           payload.param = parseWeather(jsonBody.result);
-          shimOptions.body = JSON.stringify(payload);
           break;
+        case 'timer':
+          console.log('timer is action');
+          payload.cmd = FOXY_COMMANDS.TIMER;
+          payload.param = parseTimer(jsonBody.result);
+          console.log('timer is:' + payload.param);
+        case 'play':
+          console.log('play is action');
+          payload.cmd = FOXY_COMMANDS.SPOTIFY;
+          payload.param = parseMusic(jsonBody.result);
+          console.log('play is:' + payload.param);
         default:
           break;
       }
       //Send the action and param to the shim and Web Extension.
+      shimOptions.body = JSON.stringify(payload);
       return rp(shimOptions);
     })
     .then(function(shimBody) {
@@ -124,6 +141,45 @@ function getAiBody(asrBody) {
   console.log(body);
   return body;
 }
+
+function parseMusic(result) {
+  logger.log('debug', 'Entering parseMusic');
+  if (!result.parameters.songname) {
+    console.log('no musictype found');
+    return 0; //TODO:  need a default music link here
+  }
+  spotify.getCategory('hiphop');
+
+  logger.log('debug', 'Leaving parseMusic');
+}
+
+function parseTimer(result) {
+  logger.log('debug', 'Entering parseTimer');
+  var durationSecs = 0;
+  if (!result.parameters.duration) {
+    return durationSecs;
+  }
+
+  switch (result.parameters.duration.unit) {
+    case 'min':
+      durationSecs = result.parameters.duration.amount * 60;
+      break;
+    case 's':
+      durationSecs = result.parameters.duration.amount;
+      break;
+    case 'h':
+      durationSecs = result.parameters.duration.amount * 3600;
+      break;
+    case 'day':
+      durationSecs = result.parameters.duration.amount * 86400;
+      break;
+    default:
+      break;
+  }
+
+  return durationSecs;
+}
+
 
 function parseWeather(result) {
   logger.log('debug', 'Entering parseWeather');
