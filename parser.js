@@ -59,8 +59,6 @@ const shimOptions = {
   headers: {'Content-Type': 'application/json'}
 };
 
-
-
 Parser.prototype.parseResults = function(foxyBuffer, callback) {
   asrOptions.body = foxyBuffer;
 
@@ -82,34 +80,33 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
       return rp(aiOptions);
     })
     .then(function(aiBody) {
-      let jsonBody = JSON.parse(aiBody);
-      var payload = {
-        cmd: 'none',
-        param: 'none'
-      };
-      //Determine the action from the API.AI intent parser
-      switch (jsonBody.result.action) {
-        case 'weather':
-          console.log('weather is action');
-          payload.cmd = FOXY_COMMANDS.WEATHER;
-          payload.param = parseWeather(jsonBody.result);
-          break;
-        case 'timer':
-          console.log('timer is action');
-          payload.cmd = FOXY_COMMANDS.TIMER;
-          payload.param = parseTimer(jsonBody.result);
-          console.log('timer is:' + payload.param);
-        case 'play':
-          console.log('play is action');
-          payload.cmd = FOXY_COMMANDS.SPOTIFY;
-          payload.param = parseMusic(jsonBody.result);
-          console.log('play is:' + payload.param);
-        default:
-          break;
+      var payload = parseAIBody(aiBody);
+      if(payload.cmd == FOXY_COMMANDS.SPOTIFY) {
+        console.log('Spotify cmd');
+        let playlistBrowseUri = 'https://api.spotify.com/v1/browse/categories/'
+          + payload.param + '/playlists';
+        console.log('playlist browse URI: '+ playlistBrowseUri);
+        var spotifyCategoryPlaylistOptions = {
+          uri: playlistBrowseUri,
+          method: 'GET',
+          headers: {'Authorization': 'Bearer ' + SpotifyConn.apiToken}
+        };
+        rp(spotifyCategoryPlaylistOptions)
+          .then(function(body) {
+            console.log('Got the spotify response');
+            payload.param = parseSpotify(body);
+            shimOptions.body = JSON.stringify(payload);
+            return rp(shimOptions);
+          })
+          .catch(function(err) {
+            callback('Spotify error');
+            console.log('Call failed' + err);
+          });
+      } else {
+        console.log('before calling rp on shim');
+        shimOptions.body = JSON.stringify(payload);
+        return rp(shimOptions);
       }
-      //Send the action and param to the shim and Web Extension.
-      shimOptions.body = JSON.stringify(payload);
-      return rp(shimOptions);
     })
     .then(function(shimBody) {
        callback('ok');
@@ -119,6 +116,57 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
       callback('error');
       console.log('Call failed' + err);
     });
+}
+
+function parseSpotify(body) {
+  const resBody = body && body.toString('utf8');
+  //           console.log('Body is: ' + body);
+  console.log('GOT DATA FROM SPOTIFY');
+  var jsonResults = JSON.parse(resBody);
+  let plArray = jsonResults.playlists.items;
+  var playlistId = '';
+  for(var i = 0; i < plArray.length; i++) {
+    var obj = plArray[i];
+    if (obj.type == 'playlist') {
+      console.log('Found a playlist: ' + obj.id);
+      playlistId = obj.id;
+      break;
+    }
+  }
+  return playlistId;
+}
+
+function parseAIBody(aiBody) {
+  let jsonBody = JSON.parse(aiBody);
+  var payload = {
+    cmd: 'none',
+    param: 'none'
+  };
+  console.log(aiBody);
+  //Determine the action from the API.AI intent parser
+  switch (jsonBody.result.action) {
+    case 'weather':
+      console.log('weather is action');
+      payload.cmd = FOXY_COMMANDS.WEATHER;
+      payload.param = parseWeather(jsonBody.result);
+      break;
+    case 'timer':
+      console.log('timer is action');
+      payload.cmd = FOXY_COMMANDS.TIMER;
+      payload.param = parseTimer(jsonBody.result);
+      console.log('timer is:' + payload.param);
+      break;
+    case 'play':
+      console.log('play is action');
+      console.log('genre is: ' + jsonBody.result.parameters['music-genre']);
+      payload.cmd = FOXY_COMMANDS.SPOTIFY;
+      payload.param = jsonBody.result.parameters['music-genre'];
+      break;
+    default:
+      console.log('No match');
+      break;
+  }
+  return payload;
 }
 
 function getAiBody(asrBody) {
@@ -140,17 +188,6 @@ function getAiBody(asrBody) {
   body.query = text;
   console.log(body);
   return body;
-}
-
-function parseMusic(result) {
-  logger.log('debug', 'Entering parseMusic');
-  if (!result.parameters.songname) {
-    console.log('no musictype found');
-    return 0; //TODO:  need a default music link here
-  }
-  spotify.getCategory('hiphop');
-
-  logger.log('debug', 'Leaving parseMusic');
 }
 
 function parseTimer(result) {
@@ -180,13 +217,13 @@ function parseTimer(result) {
   return durationSecs;
 }
 
-
 function parseWeather(result) {
-  logger.log('debug', 'Entering parseWeather');
+  console.log('Calling parseWeather');
   var weatherUrl = 'https://www.yahoo.com/news/weather/';
   if (!result.parameters['geo-city']) {
     return weatherUrl;
   }
+  console.log('Before switch:' + result.parameters['geo-city'].toUpperCase());
 
   switch (result.parameters['geo-city'].toUpperCase()) {
     case 'NEW YORK':
@@ -217,7 +254,7 @@ function parseWeather(result) {
       logger.log('debug', 'sending default city since no match');
       break;
   }
-
+  console.log('returning weather url:' + weatherUrl);
   return weatherUrl;
 }
 
