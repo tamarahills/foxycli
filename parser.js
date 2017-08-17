@@ -22,7 +22,8 @@ const FOXY_COMMANDS = {
   'WEATHER': 'WEATHER',
   'BOOKMARK': 'BOOKMARK',
   'TIMER': 'TIMER',
-  'SPOTIFY': 'SPOTIFY'
+  'SPOTIFY': 'SPOTIFY',
+  'IOT': 'IOT'
 };
 
 const CITY_NAMES = {
@@ -102,7 +103,36 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             callback('Spotify error');
             console.log('Call failed' + err);
           });
-      } else {
+      } else if (payload.cmd == FOXY_COMMANDS.IOT) {
+        console.log('iot');
+        let iotUri = 'https://10.19.2.243:4443/things/zwave-efbddb01-4/properties/on';
+        var iotOptions = {
+          uri: iotUri,
+          method: 'PUT',
+          rejectUnauthorized: false,
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjJiYzcxNWM1LTk3OTktNGM1OS1hMGRlLTEwNjQ1OTBjYTMwNyJ9.eyJpYXQiOjE1MDI3NDYyNTh9.X-T90f8wFv_aErWq-_8vQcyeMTzA2XFwAV-SdfDxbw-7b43AuXj7DCwFL7F5RgzzlVcTIe5KRobq5C4ld51BLA',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: ''
+        };
+        (payload.param2 == 'on')?
+          iotOptions.body = JSON.stringify({"on": true}):
+          iotOptions.body = JSON.stringify({"on": false});
+
+        rp(iotOptions)
+          .then(function(body) {
+            console.log('Got the iot response: ' + JSON.stringify(shimOptions));
+            shimOptions.body = JSON.stringify(payload);
+            return rp(shimOptions);
+          })
+          .catch(function(err) {
+            callback('iot error');
+            console.log('Call failed' + err);
+          });
+        }
+      else {
         console.log('before calling rp on shim');
         shimOptions.body = JSON.stringify(payload);
         return rp(shimOptions);
@@ -120,7 +150,6 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
 
 function parseSpotify(body) {
   const resBody = body && body.toString('utf8');
-  //           console.log('Body is: ' + body);
   console.log('GOT DATA FROM SPOTIFY');
   var jsonResults = JSON.parse(resBody);
   let plArray = jsonResults.playlists.items;
@@ -140,7 +169,8 @@ function parseAIBody(aiBody) {
   let jsonBody = JSON.parse(aiBody);
   var payload = {
     cmd: 'none',
-    param: 'none'
+    param: 'none',
+    param2: 'none'
   };
   console.log(aiBody);
   //Determine the action from the API.AI intent parser
@@ -161,6 +191,13 @@ function parseAIBody(aiBody) {
       console.log('genre is: ' + jsonBody.result.parameters['music-genre']);
       payload.cmd = FOXY_COMMANDS.SPOTIFY;
       payload.param = jsonBody.result.parameters['music-genre'];
+      break;
+    case 'iot':
+      console.log('iot is action');
+      payload.cmd = FOXY_COMMANDS.IOT;
+      payload.param = jsonBody.result.parameters.rooms;
+      payload.param2 = jsonBody.result.parameters.onoff;
+      console.log('room is: ' + payload.param);
       break;
     default:
       console.log('No match');
