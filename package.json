@@ -9,6 +9,7 @@
     "snowboy": "^1.2.0",
     "filelogger": "1.0.3",
     "body-parser": "1.17.2",
-    "node-record-lpcm16": "0.3.0"
+    "node-record-lpcm16": "0.3.0",
+    "robotjs": "0.4.7"
   }
 }

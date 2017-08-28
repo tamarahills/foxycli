@@ -6,6 +6,7 @@
 const fs = require('fs');
 const rp = require('request-promise');
 const Logger = require('filelogger');
+const robot = require('robotjs');
 var SpotifyConn= require('./spotify');
 
 var logger = new Logger('debug', 'error', 'foxy.log');
@@ -17,8 +18,9 @@ function Parser() {}
 
 const FOXY_COMMANDS = {
   'NONE': 'NONE',
-  'NEXT': 'NEXT SLIDE',
-  'SHUT': 'SHUT UP',
+  'NEXTSLIDE': 'NEXTSLIDE',
+  'PREVIOUSSLIDE': 'PREVIOUSSLIDE',
+  'SHUTUP': 'SHUTUP',
   'WEATHER': 'WEATHER',
   'BOOKMARK': 'BOOKMARK',
   'TIMER': 'TIMER',
@@ -198,6 +200,14 @@ function parseAIBody(aiBody) {
       payload.param = jsonBody.result.parameters.rooms;
       payload.param2 = jsonBody.result.parameters.onoff;
       console.log('room is: ' + payload.param);
+      break;
+    case 'nextslide':
+      console.log('nextslide is action');
+      robot.keyTap("right");
+      break;
+    case 'lastslide':
+      console.log('nextslide is action');
+      robot.keyTap("left");
       break;
     default:
       console.log('No match');
