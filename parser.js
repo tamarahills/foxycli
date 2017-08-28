@@ -186,7 +186,8 @@ function parseAIBody(aiBody) {
       console.log('timer is action');
       payload.cmd = FOXY_COMMANDS.TIMER;
       payload.param = parseTimer(jsonBody.result);
-      console.log('timer is:' + payload.param);
+      payload.param2 = jsonBody.result.parameters.any;
+      console.log('timer is:' + payload.param + '. Name is: ' + payload.param2);
       break;
     case 'play':
       console.log('play is action');
