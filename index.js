@@ -70,6 +70,7 @@ Foxy.init = () => {
   detector.on('sound', (buffer) =>  {
     logger.log('debug', 'sound');
     if(foxy.state == stateEnum.STREAMING) {
+      logger.log('State is STREAMING');
       Array.prototype.push.apply(foxy.audioBuffer, buffer);
     }
     foxy.emit('sound', buffer);
@@ -89,9 +90,11 @@ Foxy.init = () => {
         foxy.emit('hotword', index, triggerHotword);
         logger.log('debug', 'FOUND KEYWORD');
       } catch (e) {
+        logger.log('error', 'Failed on trigger');
         throw ERROR.INVALID_INDEX;
       }
     } else {
+      logger.log('error', 'Foxy not started');
       throw ERROR.NOT_STARTED;
     }
   }
