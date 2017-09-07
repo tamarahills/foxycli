@@ -88,7 +88,6 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
         console.log('Spotify cmd');
         let playlistBrowseUri = 'https://api.spotify.com/v1/browse/categories/'
           + payload.param + '/playlists';
-        console.log('playlist browse URI: '+ playlistBrowseUri);
         var spotifyCategoryPlaylistOptions = {
           uri: playlistBrowseUri,
           method: 'GET',
