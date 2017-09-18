@@ -28,15 +28,6 @@ const FOXY_COMMANDS = {
   'IOT': 'IOT'
 };
 
-const CITY_NAMES = {
-  'NEWYORK': 'NEW YORK',
-  'LA': 'LOS ANGELES',
-  'CHICAGO': 'CHICAGO',
-  'HOUSTON': 'HOUSTON',
-  'PARIS': 'PARIS',
-  'SANFRANCISCO': 'SAN FRANCISCO'
-};
-
 const asrOptions = {
   uri: 'http://52.53.97.165/asr',
   method: 'POST',
@@ -54,6 +45,15 @@ const aiOptions = {
     'Content-Type': 'application/json'
   }
 };
+const weatherLink = 'http://api.openweathermap.org/data/2.5/weather?' +
+  'APPID=aa9502b21136daabe9a2d556938ccfbe&units=imperial&q='
+const weatherOptions = {
+  uri: '',
+  method: 'GET',
+  body: '',
+  headers: {
+  }
+};
 
 const shimOptions = {
   uri: 'http://localhost:3000/command',
@@ -64,6 +64,7 @@ const shimOptions = {
 
 Parser.prototype.parseResults = function(foxyBuffer, callback) {
   asrOptions.body = foxyBuffer;
+  var utterance = '';
 
   // Send the speech buffer to Kaldi
   rp(asrOptions)
@@ -78,17 +79,20 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
         console.log('result ok');
       }
       // Get results from Kaldi Speech rec. Format for Api.ai
-      aiOptions.body = JSON.stringify(getAiBody(jsonResults));
+      var speechBody = getAiBody(jsonResults);
+      utterance = speechBody.query;
+      aiOptions.body = JSON.stringify(speechBody);
+
       // chain to API.ai
       return rp(aiOptions);
     })
     .then(function(aiBody) {
       var payload = parseAIBody(aiBody);
+      payload.utterance = utterance;
       if(payload.cmd == FOXY_COMMANDS.SPOTIFY) {
         console.log('Spotify cmd');
         let playlistBrowseUri = 'https://api.spotify.com/v1/browse/categories/'
           + payload.param + '/playlists';
-        console.log('playlist browse URI: '+ playlistBrowseUri);
         var spotifyCategoryPlaylistOptions = {
           uri: playlistBrowseUri,
           method: 'GET',
@@ -98,6 +102,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           .then(function(body) {
             console.log('Got the spotify response');
             payload.param = parseSpotify(body);
+            payload.utterance = cleanSpeech(payload);
             shimOptions.body = JSON.stringify(payload);
             return rp(shimOptions);
           })
@@ -127,39 +132,66 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           .then(function(body) {
             console.log('Got the iot response: ' + JSON.stringify(shimOptions));
             shimOptions.body = JSON.stringify(payload);
+            payload.utterance = cleanSpeech(payload);
             return rp(shimOptions);
           })
           .catch(function(err) {
             callback('iot error');
             console.log('Call failed' + err);
           });
-        }
-      else {
+      } else if (payload.cmd == FOXY_COMMANDS.WEATHER) {
+        console.log('weather');
+        weatherOptions.uri = weatherLink + payload.param;
+        console.log('WEATHER URI: ' + weatherOptions.uri);
+
+        rp(weatherOptions)
+          .then(function(body) {
+            console.log('Got the weather response: ');
+            console.log('Body is: ' + body);
+            var jsonResults = JSON.parse(body);
+            console.log('weather is:' + jsonResults.weather);
+            payload.param = jsonResults.name;             //City name
+            payload.param2 = jsonResults.main.temp;       //Current temp
+            payload.param3 = jsonResults.main.temp_min;   //Min temp
+            payload.param4 = jsonResults.main.temp_max;   //Max temp
+            payload.param5 = jsonResults.weather[0].main; //Description
+            payload.utterance = cleanSpeech(payload);
+            console.log(payload);
+
+            shimOptions.body = JSON.stringify(payload);
+            return rp(shimOptions);
+          })
+          .catch(function(err) {
+            callback('weather error');
+            console.log('Call failed' + err);
+          });
+      } else {
         console.log('before calling rp on shim');
+        payload.utterance = cleanSpeech(payload);
         shimOptions.body = JSON.stringify(payload);
         return rp(shimOptions);
       }
     })
     .then(function(shimBody) {
        callback('ok');
-       console.log('finished the chain');
+       logger.log('debug','finished the chain');
     })
     .catch(function(err) {
       callback('error');
-      console.log('Call failed' + err);
+      logger.log('debug','Call failed' + err);
     });
 }
 
 function parseSpotify(body) {
   const resBody = body && body.toString('utf8');
-  console.log('GOT DATA FROM SPOTIFY');
+  logger.log('debug','GOT DATA FROM SPOTIFY');
   var jsonResults = JSON.parse(resBody);
   let plArray = jsonResults.playlists.items;
   var playlistId = '';
   for(var i = 0; i < plArray.length; i++) {
     var obj = plArray[i];
     if (obj.type == 'playlist') {
-      console.log('Found a playlist: ' + obj.id);
+      logger.log('debug','Found a playlist: ' + obj.id);
       playlistId = obj.id;
       break;
     }
@@ -167,23 +199,49 @@ function parseSpotify(body) {
   return playlistId;
 }
 
+function cleanSpeech(payload) {
+  var lower = payload.utterance.toLowerCase();
+  var foxyString = 'Hey Foxy, ';
+  var final;
+  switch (payload.cmd) {
+    case FOXY_COMMANDS.WEATHER:
+      final = foxyString + 'what\'s the weather in ' +
+        payload.param + '?';
+      break;
+    case FOXY_COMMANDS.TIMER:
+      final = foxyString + lower + '.';
+      break;
+    case FOXY_COMMANDS.SPOTIFY:
+      final = foxyString + lower + '.';
+      break;
+    case FOXY_COMMANDS.IOT:
+      final = foxyString + lower + '.';
+      break;
+    // TODO: add next slide
+    default:
+      console.log('No match');
+      break;
+  }
+  return final;
+}
+
 function parseAIBody(aiBody) {
   let jsonBody = JSON.parse(aiBody);
   var payload = {
     cmd: 'none',
     param: 'none',
-    param2: 'none'
+    param2: 'none',
   };
-  console.log(aiBody);
+  logger.log('debug', aiBody);
   //Determine the action from the API.AI intent parser
   switch (jsonBody.result.action) {
     case 'weather':
-      console.log('weather is action');
+      logger.log('debug','weather is action');
       payload.cmd = FOXY_COMMANDS.WEATHER;
-      payload.param = parseWeather(jsonBody.result);
+      payload.param = jsonBody.result.parameters['geo-city'];
       break;
     case 'timer':
-      console.log('timer is action');
+      logger.log('debug','timer is action');
       payload.cmd = FOXY_COMMANDS.TIMER;
       payload.param = parseTimer(jsonBody.result);
       payload.param2 = jsonBody.result.parameters.any;
@@ -214,6 +272,7 @@ function parseAIBody(aiBody) {
       console.log('No match');
       break;
   }
+
   return payload;
 }
 
@@ -264,48 +323,6 @@ function parseTimer(result) {
 
   return durationSecs;
 }
-
-function parseWeather(result) {
-  console.log('Calling parseWeather');
-  var weatherUrl = 'https://www.yahoo.com/news/weather/';
-  if (!result.parameters['geo-city']) {
-    return weatherUrl;
-  }
-  console.log('Before switch:' + result.parameters['geo-city'].toUpperCase());
-
-  switch (result.parameters['geo-city'].toUpperCase()) {
-    case 'NEW YORK':
-      logger.log('debug','city is : NEW YORK');
-      weatherUrl = 'https://www.yahoo.com/news/weather/united-states/new-york/new-york-2459115';
-      break;
-    case 'LOS ANGELES':
-      logger.log('debug','city is : LA');
-      weatherUrl = 'https://www.yahoo.com/news/weather/united-states/california/los-angeles-2442047'
-      break;
-    case 'CHICAGO':
-    logger.log('debug','city is : CHICAGO');
-      weatherUrl = 'https://www.yahoo.com/news/weather/united-states/illinois/chicago-2379574';
-      break;
-    case 'HOUSTON':
-      logger.log('debug','city is : HOUSTON');
-      weatherUrl = 'https://www.yahoo.com/news/weather/united-states/texas/houston-2424766';
-      break;
-    case 'PARIS':
-      logger.log('debug','city is : PARIS');
-      weatherUrl = 'https://www.yahoo.com/news/weather/france/%C3%AEle-de-france/paris-615702';
-      break;
-    case 'SAN FRANCISCO':
-      logger.log('debug','city is : SAN FRANCISCO');
-      weatherUrl = 'https://www.yahoo.com/news/weather/united-states/california/san-francisco-2487956';
-      break;
-    default:
-      logger.log('debug', 'sending default city since no match');
-      break;
-  }
-  console.log('returning weather url:' + weatherUrl);
-  return weatherUrl;
-}
-
 module.exports = {
   Parser:Parser,
   FOXY_COMMANDS: FOXY_COMMANDS
