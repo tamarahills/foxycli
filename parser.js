@@ -219,6 +219,7 @@ function cleanSpeech(payload) {
       break;
     // TODO: add next slide
     default:
+      final = foxyString + lower + '.';
       console.log('No match');
       break;
   }
@@ -269,6 +270,7 @@ function parseAIBody(aiBody) {
       robot.keyTap("left");
       break;
     default:
+      payload.cmd = FOXY_COMMANDS.NONE;
       console.log('No match');
       break;
   }
