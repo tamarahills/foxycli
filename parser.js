@@ -112,13 +112,13 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           });
       } else if (payload.cmd == FOXY_COMMANDS.IOT) {
         console.log('iot');
-        let iotUri = 'https://10.19.2.243:4443/things/zwave-efbddb01-4/properties/on';
+        let iotUri = 'https://localhost:4443/things/zwave-efbddb01-4/properties/on';
         var iotOptions = {
           uri: iotUri,
           method: 'PUT',
           rejectUnauthorized: false,
           headers: {
-            'Authorization': 'Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjJiYzcxNWM1LTk3OTktNGM1OS1hMGRlLTEwNjQ1OTBjYTMwNyJ9.eyJpYXQiOjE1MDI3NDYyNTh9.X-T90f8wFv_aErWq-_8vQcyeMTzA2XFwAV-SdfDxbw-7b43AuXj7DCwFL7F5RgzzlVcTIe5KRobq5C4ld51BLA',
+            'Authorization': 'Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjM2NDNkNjdmLTQ1MzctNGEzMS04NmIxLTgyMDk0ZGI0ODU5NCJ9.eyJpYXQiOjE1MDU5MjE3NzV9.C6wKLoieTsR7ZzOqYopKPDXntxYvxY5emb4nKFqXbdE0fL1D8c2DTiRJOF2i4udTrQpIdks20q_TTDLoB-uZZA',
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           },
@@ -133,6 +133,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             console.log('Got the iot response: ' + JSON.stringify(shimOptions));
             shimOptions.body = JSON.stringify(payload);
             payload.utterance = cleanSpeech(payload);
+            shimOptions.body = JSON.stringify(payload);
             return rp(shimOptions);
           })
           .catch(function(err) {
@@ -216,6 +217,7 @@ function cleanSpeech(payload) {
       break;
     case FOXY_COMMANDS.IOT:
       final = foxyString + lower + '.';
+      console.log(final);
       break;
     // TODO: add next slide
     default:
@@ -260,6 +262,7 @@ function parseAIBody(aiBody) {
       payload.param = jsonBody.result.parameters.rooms;
       payload.param2 = jsonBody.result.parameters.onoff;
       console.log('room is: ' + payload.param);
+      console.log('switch is ' + payload.param2);
       break;
     case 'nextslide':
       console.log('nextslide is action');

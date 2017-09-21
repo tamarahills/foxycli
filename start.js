@@ -42,7 +42,7 @@ app.listen(3000, function () {
   logger.log('debug', 'initializing startup shim');
   var environment = process.env;
   environment.PATH = '/opt/local/bin:/opt/local/sbin:/Users/mozilla/.gvm/bin:/Users/mozilla/.cargo/bin:“/Volumes/development/openwrt/staging_dir/host/bin:/usr/local/bin:/usr/local/bin/python:/usr/local/opt/coreutils/libexec/gnubin:/Applications/adt-bundle-mac-x86_64-20140321/sdk/platform-tools:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin”';
-  childProcess.exec('"/usr/local/bin/node" ./index.js', environment,
+  childProcess.exec('"/Users/mozilla/.nvm/versions/node/v7.7.2/bin/node" ./index.js', environment,
     function(error, stdout, stderr) {
       if(error) {
         console.error('exec error:' + error);

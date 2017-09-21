@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 cd /Volumes/development/foxy/foxycli
-/usr/local/bin/node start.js
+/Users/mozilla/.nvm/versions/node/v7.7.2/bin/node start.js
