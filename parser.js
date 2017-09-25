@@ -25,7 +25,8 @@ const FOXY_COMMANDS = {
   'BOOKMARK': 'BOOKMARK',
   'TIMER': 'TIMER',
   'SPOTIFY': 'SPOTIFY',
-  'IOT': 'IOT'
+  'IOT': 'IOT',
+  'POCKET': 'POCKET'
 };
 
 const asrOptions = {
@@ -263,6 +264,10 @@ function parseAIBody(aiBody) {
       payload.param2 = jsonBody.result.parameters.onoff;
       console.log('room is: ' + payload.param);
       console.log('switch is ' + payload.param2);
+      break;
+    case 'pocket':
+      console.log('iot is action');
+      payload.cmd = FOXY_COMMANDS.POCKET;
       break;
     case 'nextslide':
       console.log('nextslide is action');
