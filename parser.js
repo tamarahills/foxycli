@@ -26,7 +26,8 @@ const FOXY_COMMANDS = {
   'TIMER': 'TIMER',
   'SPOTIFY': 'SPOTIFY',
   'IOT': 'IOT',
-  'POCKET': 'POCKET'
+  'POCKET': 'POCKET',
+  'NPR': 'NPR'
 };
 
 const asrOptions = {
@@ -169,6 +170,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           });
       } else {
         console.log('before calling rp on shim');
+        console.log('command is:' + payload.cmd);
         payload.utterance = cleanSpeech(payload);
         shimOptions.body = JSON.stringify(payload);
         return rp(shimOptions);
@@ -217,6 +219,10 @@ function cleanSpeech(payload) {
       final = foxyString + lower + '.';
       break;
     case FOXY_COMMANDS.IOT:
+      final = foxyString + lower + '.';
+      console.log(final);
+      break;
+    case FOXY_COMMANDS.NPR:
       final = foxyString + lower + '.';
       console.log(final);
       break;
@@ -276,6 +282,10 @@ function parseAIBody(aiBody) {
     case 'lastslide':
       console.log('nextslide is action');
       robot.keyTap("left");
+      break;
+    case 'npr':
+      console.log('npr is action');
+      payload.cmd = FOXY_COMMANDS.NPR;
       break;
     default:
       payload.cmd = FOXY_COMMANDS.NONE;
