@@ -203,32 +203,35 @@ function parseSpotify(body) {
   return playlistId;
 }
 
+String.prototype.capitalize = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
 function cleanSpeech(payload) {
   var lower = payload.utterance.toLowerCase();
-  var foxyString = 'Hey Foxy, ';
   var final;
   switch (payload.cmd) {
     case FOXY_COMMANDS.WEATHER:
-      final = foxyString + 'what\'s the weather in ' +
-        payload.param + '?';
+      final = '\"What\'s the weather in ' +
+        payload.param + '?\"';
       break;
     case FOXY_COMMANDS.TIMER:
-      final = foxyString + lower + '.';
+      final = '\"' + lower.capitalize() + '.\"';
       break;
     case FOXY_COMMANDS.SPOTIFY:
-      final = foxyString + lower + '.';
+      final = '\"' + lower.capitalize() + '.\"';
       break;
     case FOXY_COMMANDS.IOT:
-      final = foxyString + lower + '.';
+      final = '\"' + lower.capitalize() + '.\"';
       console.log(final);
       break;
     case FOXY_COMMANDS.NPR:
-      final = foxyString + lower + '.';
+      final = '\"' + lower.capitalize() + '.\"';
       console.log(final);
       break;
     // TODO: add next slide
     default:
-      final = foxyString + lower + '.';
+      final = '\"' + lower.capitalize() + '.\"';
       console.log('No match');
       break;
   }
