@@ -168,12 +168,16 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             callback('weather error');
             console.log('Call failed' + err);
           });
+      } else if(payload.cmd == FOXY_COMMANDS.NEXTSLIDE || payload.cmd == FOXY_COMMANDS.PREVIOUSSLIDE) {
+        callback('ok');
       } else {
         console.log('before calling rp on shim');
         console.log('command is:' + payload.cmd);
         payload.utterance = cleanSpeech(payload);
         shimOptions.body = JSON.stringify(payload);
-        return rp(shimOptions);
+        if(payload.cmd != FOXY_COMMANDS.NEXTSLIDE || payload.cmd != FOXY_COMMANDS.PREVIOUSSLIDE) {
+          return rp(shimOptions);
+        }
       }
     })
     .then(function(shimBody) {
@@ -215,24 +219,10 @@ function cleanSpeech(payload) {
       final = '\"What\'s the weather in ' +
         payload.param + '?\"';
       break;
-    case FOXY_COMMANDS.TIMER:
-      final = '\"' + lower.capitalize() + '.\"';
-      break;
-    case FOXY_COMMANDS.SPOTIFY:
-      final = '\"' + lower.capitalize() + '.\"';
-      break;
-    case FOXY_COMMANDS.IOT:
-      final = '\"' + lower.capitalize() + '.\"';
-      console.log(final);
-      break;
-    case FOXY_COMMANDS.NPR:
-      final = '\"' + lower.capitalize() + '.\"';
-      console.log(final);
-      break;
     // TODO: add next slide
     default:
       final = '\"' + lower.capitalize() + '.\"';
-      console.log('No match');
+      console.log(final);
       break;
   }
   return final;
@@ -275,14 +265,16 @@ function parseAIBody(aiBody) {
       console.log('switch is ' + payload.param2);
       break;
     case 'pocket':
-      console.log('iot is action');
+      console.log('pocket is action');
       payload.cmd = FOXY_COMMANDS.POCKET;
       break;
     case 'nextslide':
+      payload.cmd = FOXY_COMMANDS.NEXTSLIDE;
       console.log('nextslide is action');
       robot.keyTap("right");
       break;
     case 'lastslide':
+      payload.cmd = FOXY_COMMANDS.PREVIOUSSLIDE;
       console.log('nextslide is action');
       robot.keyTap("left");
       break;
