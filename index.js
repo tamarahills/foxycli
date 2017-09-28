@@ -125,6 +125,12 @@ Foxy.stop = () => record.stop()
 
 logger.log('debug', 'Initializing Foxy Process.');
 Foxy.start(Foxy.init());
+
+//app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+process.on('uncaughtException', function (exception) {
+  console.log(exception);
+  logger.log('error', exception);
+});
 /*
 app.get('/callback', function (req, res) {
   res.send('Got a callback!')
