@@ -51,7 +51,6 @@ Foxy.init = () => {
   logger.log('debug', 'Created detector');
 
   detector.on('silence', () => {
-    logger.log('debug', 'Detected silence');
     if(foxy.state == stateEnum.STREAMING) {
       // Stop streaming and pause the microphone.
       Foxy.pause(foxy);
@@ -61,7 +60,6 @@ Foxy.init = () => {
         foxy.audioBuffer = [];
         Foxy.resume(foxy);
         foxy.state = stateEnum.LISTENING;
-        logger.log('debug', 'resumed recording');
       });
     }
     foxy.emit('silence');
@@ -126,16 +124,7 @@ Foxy.stop = () => record.stop()
 logger.log('debug', 'Initializing Foxy Process.');
 Foxy.start(Foxy.init());
 
-//app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 process.on('uncaughtException', function (exception) {
-  console.log(exception);
-  logger.log('error', exception);
+  console.log(exception.stack);
+  logger.log('error', exception.stack);
 });
-/*
-app.get('/callback', function (req, res) {
-  res.send('Got a callback!')
-});
-
-app.listen(3001, function () {
-  logger.log('debug', 'initializing server');
-});*/

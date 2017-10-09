@@ -37,7 +37,7 @@ const addOptions = {
 };
 
 
-// consumer_key = 'XXXXXXXXXXXXXXXXXXXXXXXKXXXXXXX';
+consumer_key = 'XXXXXXXXXXXXXXXXXXXXXXXKXXXXXXX';
 
 
 const app = express();
@@ -57,6 +57,7 @@ app.post('/command', bodyParser, function(req, res) {
   var param = req.body.param;
   logger.log('debug', 'cmd is:' + command);
   if (command == 'POCKET') {
+    logger.log('debug', 'command is POCKET');
     req.body.param = userid;
     req.body.param2 = access_token;
     req.body.param3 = consumer_key;
@@ -65,8 +66,9 @@ app.post('/command', bodyParser, function(req, res) {
   var buf = new Buffer(JSON.stringify(req.body));
 
   len.writeUInt32LE(buf.length, 0);
-  process.stdout.write(len);
-  process.stdout.write(buf);
+  var writelen = process.stdout.write(len);
+  var writebuf = process.stdout.write(buf);
+
   res.status(200).send('OK');
 });
 
@@ -98,7 +100,6 @@ stdin.on('data', function (chunk) {
     }
     logger.log('debug', chunk);
   }
-
 });
 
 function addPocket(url) {
@@ -171,14 +172,4 @@ app.get('/redirecturi', function(req, res) {
 
 app.listen(3000, function () {
   logger.log('debug', 'initializing startup shim');
-  var environment = process.env;
-  environment.PATH = '/opt/local/bin:/opt/local/sbin:/Users/mozilla/.gvm/bin:/Users/mozilla/.cargo/bin:“/Volumes/development/openwrt/staging_dir/host/bin:/usr/local/bin:/usr/local/bin/python:/usr/local/opt/coreutils/libexec/gnubin:/Applications/adt-bundle-mac-x86_64-20140321/sdk/platform-tools:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin”';
-  childProcess.exec('"/Users/mozilla/.nvm/versions/node/v7.7.2/bin/node" ./index.js', environment,
-    function(error, stdout, stderr) {
-      if(error) {
-        console.error('exec error:' + error);
-        fs.writeFile("./index.log", "Exec error:" + error, function(err) {
-        });
-      }
-    });
 });

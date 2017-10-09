@@ -7,6 +7,7 @@ const fs = require('fs');
 const rp = require('request-promise');
 const Logger = require('filelogger');
 const robot = require('robotjs');
+const uuidv4 =  require('uuid/v4');
 var SpotifyConn= require('./spotify');
 
 var logger = new Logger('debug', 'error', 'foxy.log');
@@ -72,13 +73,9 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
   rp(asrOptions)
     .then(function(body) {
       const resBody = body && body.toString('utf8');
-      console.log('Body is: ' + resBody);
       var jsonResults = JSON.parse(resBody);
-      console.log('status is:' + jsonResults.status);
       if (jsonResults.status != 'ok') {
-        console.log('error.  Could not understand speech');
       } else {
-        console.log('result ok');
       }
       // Get results from Kaldi Speech rec. Format for Api.ai
       var speechBody = getAiBody(jsonResults);
@@ -92,7 +89,6 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
       var payload = parseAIBody(aiBody);
       payload.utterance = utterance;
       if(payload.cmd == FOXY_COMMANDS.SPOTIFY) {
-        console.log('Spotify cmd');
         let playlistBrowseUri = 'https://api.spotify.com/v1/browse/categories/'
           + payload.param + '/playlists';
         var spotifyCategoryPlaylistOptions = {
@@ -102,7 +98,6 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
         };
         rp(spotifyCategoryPlaylistOptions)
           .then(function(body) {
-            console.log('Got the spotify response');
             payload.param = parseSpotify(body);
             payload.utterance = cleanSpeech(payload);
             shimOptions.body = JSON.stringify(payload);
@@ -110,10 +105,8 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           })
           .catch(function(err) {
             callback('Spotify error');
-            console.log('Call failed' + err);
           });
       } else if (payload.cmd == FOXY_COMMANDS.IOT) {
-        console.log('iot');
         let iotUri = 'https://localhost:4443/things/zwave-efbddb01-4/properties/on';
         var iotOptions = {
           uri: iotUri,
@@ -132,7 +125,6 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
 
         rp(iotOptions)
           .then(function(body) {
-            console.log('Got the iot response: ' + JSON.stringify(shimOptions));
             shimOptions.body = JSON.stringify(payload);
             payload.utterance = cleanSpeech(payload);
             shimOptions.body = JSON.stringify(payload);
@@ -140,39 +132,29 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           })
           .catch(function(err) {
             callback('iot error');
-            console.log('Call failed' + err);
           });
       } else if (payload.cmd == FOXY_COMMANDS.WEATHER) {
-        console.log('weather');
         weatherOptions.uri = weatherLink + payload.param;
-        console.log('WEATHER URI: ' + weatherOptions.uri);
 
         rp(weatherOptions)
           .then(function(body) {
-            console.log('Got the weather response: ');
-            console.log('Body is: ' + body);
             var jsonResults = JSON.parse(body);
-            console.log('weather is:' + jsonResults.weather);
             payload.param = jsonResults.name;             //City name
             payload.param2 = jsonResults.main.temp;       //Current temp
             payload.param3 = jsonResults.main.temp_min;   //Min temp
             payload.param4 = jsonResults.main.temp_max;   //Max temp
             payload.param5 = jsonResults.weather[0].main; //Description
             payload.utterance = cleanSpeech(payload);
-            console.log(payload);
 
             shimOptions.body = JSON.stringify(payload);
             return rp(shimOptions);
           })
           .catch(function(err) {
             callback('weather error');
-            console.log('Call failed' + err);
           });
       } else if(payload.cmd == FOXY_COMMANDS.NEXTSLIDE || payload.cmd == FOXY_COMMANDS.PREVIOUSSLIDE) {
         callback('ok');
       } else {
-        console.log('before calling rp on shim');
-        console.log('command is:' + payload.cmd);
         payload.utterance = cleanSpeech(payload);
         shimOptions.body = JSON.stringify(payload);
         if(payload.cmd != FOXY_COMMANDS.NEXTSLIDE || payload.cmd != FOXY_COMMANDS.PREVIOUSSLIDE) {
@@ -222,7 +204,6 @@ function cleanSpeech(payload) {
     // TODO: add next slide
     default:
       final = '\"' + lower.capitalize() + '.\"';
-      console.log(final);
       break;
   }
   return final;
@@ -248,43 +229,32 @@ function parseAIBody(aiBody) {
       payload.cmd = FOXY_COMMANDS.TIMER;
       payload.param = parseTimer(jsonBody.result);
       payload.param2 = jsonBody.result.parameters.any;
-      console.log('timer is:' + payload.param + '. Name is: ' + payload.param2);
       break;
     case 'play':
-      console.log('play is action');
-      console.log('genre is: ' + jsonBody.result.parameters['music-genre']);
       payload.cmd = FOXY_COMMANDS.SPOTIFY;
       payload.param = jsonBody.result.parameters['music-genre'];
       break;
     case 'iot':
-      console.log('iot is action');
       payload.cmd = FOXY_COMMANDS.IOT;
       payload.param = jsonBody.result.parameters.rooms;
       payload.param2 = jsonBody.result.parameters.onoff;
-      console.log('room is: ' + payload.param);
-      console.log('switch is ' + payload.param2);
       break;
     case 'pocket':
-      console.log('pocket is action');
       payload.cmd = FOXY_COMMANDS.POCKET;
       break;
     case 'nextslide':
       payload.cmd = FOXY_COMMANDS.NEXTSLIDE;
-      console.log('nextslide is action');
       robot.keyTap("right");
       break;
     case 'lastslide':
       payload.cmd = FOXY_COMMANDS.PREVIOUSSLIDE;
-      console.log('nextslide is action');
       robot.keyTap("left");
       break;
     case 'npr':
-      console.log('npr is action');
       payload.cmd = FOXY_COMMANDS.NPR;
       break;
     default:
       payload.cmd = FOXY_COMMANDS.NONE;
-      console.log('No match');
       break;
   }
 
@@ -297,7 +267,7 @@ function getAiBody(asrBody) {
     "v":"20150910",
     "query": '',
     "lang":"en",
-    "sessionId":"62c6454e-e3c3-40fb-a25a-d582e0b78191",
+    "sessionId":  uuidv4(),
     "timezone":"2017-07-24T10:45:52-0400"
   };
   let text = '';
@@ -308,7 +278,6 @@ function getAiBody(asrBody) {
     }
   }
   body.query = text;
-  console.log(body);
   return body;
 }
 
