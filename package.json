@@ -4,14 +4,25 @@
   "description": "Agent Foxy",
   "author": "Tamara Hills <thills@mozilla.com>",
   "license": "MPL-2.0",
+  "scripts": {
+    "test": "npm run lint && npm run mocha",
+    "lint": "eslint .",
+    "mocha": "./test/run-tests.sh"
+  },
   "dependencies": {
+    "babel-eslint": "^8.0.1",
     "body-parser": "1.17.2",
+    "chai": "^4.1.2",
     "cookie-parser": "^1.4.3",
     "errorhandler": "^1.5.0",
+    "eslint": "^4.8.0",
     "express": "^4.15.4",
     "filelogger": "1.0.3",
     "get-stdin": "^5.0.1",
+    "jest": "^21.2.1",
+    "mocha": "^4.0.1",
     "nconf": "^0.8.5",
+    "nock": "^9.0.22",
     "node-getpocket": "^1.0.0",
     "node-record-lpcm16": "0.3.0",
     "pocket-sdk": "0.0.10",
@@ -22,5 +33,18 @@
     "stdio": "^0.2.7",
     "universal-analytics": "^0.4.15",
     "utf8": "^2.1.2"
+  },
+  "jest": {
+    "coverageDirectory": "./coverage/",
+    "moduleFileExtensions": [
+      "js",
+      "json"
+    ],
+    "testMatch": [
+      "**/test/**/*-test.(js)"
+    ],
+    "mapCoverage": true,
+    "setupTestFrameworkScriptFile": "<rootDir>/test/common.js",
+    "testEnvironment": "node"
   }
 }

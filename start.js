@@ -4,9 +4,7 @@
 
 'use strict';
 
-var childProcess = require('child_process');
 const express = require('express')
-const fs = require('fs');
 const Logger = require('filelogger');
 const bodyParser = require('body-parser').json();
 const rp = require('request-promise');
@@ -57,7 +55,6 @@ app.get('/start', function (req, res) {
 app.post('/command', bodyParser, function(req, res) {
   logger.log('debug', 'Got a command:' + JSON.stringify(req.body));
   var command = req.body.cmd;
-  var param = req.body.param;
   logger.log('debug', 'cmd is:' + command);
   if (command == 'POCKET') {
     logger.log('debug', 'command is POCKET');
@@ -69,8 +66,8 @@ app.post('/command', bodyParser, function(req, res) {
   var buf = new Buffer(JSON.stringify(req.body));
 
   len.writeUInt32LE(buf.length, 0);
-  var writelen = process.stdout.write(len);
-  var writebuf = process.stdout.write(buf);
+  process.stdout.write(len);
+  process.stdout.write(buf);
 
   res.status(200).send('OK');
 });
@@ -108,15 +105,14 @@ stdin.on('data', function (chunk) {
 function addPocket(url) {
   logger.log('debug', 'calling addPocket');
   var addBody = {
-    "url": url,
-    "consumer_key": consumer_key,
-    "access_token": access_token
+    'url': url,
+    'consumer_key': consumer_key,
+    'access_token': access_token
   };
   addOptions.body = JSON.stringify(addBody);
   rp(addOptions)
-    .then(function(body) {
+    .then(function() {
       logger.log('success');
-      let jsonBody = JSON.parse(body);
     })
     .catch(function(err) {
       logger.log('Failed to add to pocket');
@@ -136,8 +132,8 @@ stdin.on('end', function () {
 // Pocket Auth Flows
 //
 app.get('/pocket', function(req, res) {
-  var oauthBody = {"consumer_key":consumer_key,
-     "redirect_uri": "http://127.0.0.1:3000/redirecturi"
+  var oauthBody = {'consumer_key':consumer_key,
+     'redirect_uri': 'http://127.0.0.1:3000/redirecturi'
    };
   oathRequestOptions.body = JSON.stringify(oauthBody);
   rp(oathRequestOptions)
@@ -157,10 +153,11 @@ app.get('/pocket', function(req, res) {
 app.get('/redirecturi', function(req, res) {
   console.log('redirecturi');
   console.log(req.body);
+  console.log(res);
 
   var authBody = {
-    "consumer_key":consumer_key,
-    "code":user_key
+    'consumer_key':consumer_key,
+    'code':user_key
   };
   finalAuthorizeOptions.body = JSON.stringify(authBody);
 

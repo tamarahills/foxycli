@@ -2,20 +2,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-"use strict";
-const fs = require('fs');
+'use strict';
 const rp = require('request-promise');
 const Logger = require('filelogger');
 const robot = require('robotjs');
 const uuidv4 =  require('uuid/v4');
-const ua = require('universal-analytics');
 const foxycmd = 'foxycmd';
 const foxycmderror = 'foxycmderror';
 var SpotifyConn= require('./spotify');
 
 var logger = new Logger('debug', 'error', 'foxy.log');
 
-var spotify = new SpotifyConn();
 var gaVisitor = '';
 
 
@@ -85,8 +82,9 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
       const resBody = body && body.toString('utf8');
       var jsonResults = JSON.parse(resBody);
       if (jsonResults.status != 'ok') {
-      } else {
-      }
+        logger.log('debug','Kaldi failed:' + jsonResults.status);
+      } 
+
       // Get results from Kaldi Speech rec. Format for Api.ai
       var speechBody = getAiBody(jsonResults);
       utterance = speechBody.query;
@@ -112,43 +110,52 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             payload.utterance = cleanSpeech(payload);
             shimOptions.body = JSON.stringify(payload);
             if (payload.param == '') {
-              gaVisitor.event(foxycmderror, FOXY_COMMANDS.SPOTIFY, payload.utterance).send();
+              gaVisitor.event(foxycmderror, FOXY_COMMANDS.SPOTIFY, 
+                payload.utterance).send();
             } else {
               gaVisitor.event(foxycmd, payload.cmd, payload.param).send();
             }
             return rp(shimOptions);
           })
           .catch(function(err) {
+            logger.log('debug', 'Spotify error:' + err);
             callback('Spotify error');
           });
       } else if (payload.cmd == FOXY_COMMANDS.IOT) {
-        let iotUri = 'https://localhost:4443/things/zwave-efbddb01-4/properties/on';
+        let iotUri = 
+          'https://localhost:4443/things/zwave-efbddb01-4/properties/on';
         var iotOptions = {
           uri: iotUri,
           method: 'PUT',
           rejectUnauthorized: false,
           headers: {
-            'Authorization': 'Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjM2NDNkNjdmLTQ1MzctNGEzMS04NmIxLTgyMDk0ZGI0ODU5NCJ9.eyJpYXQiOjE1MDU5MjE3NzV9.C6wKLoieTsR7ZzOqYopKPDXntxYvxY5emb4nKFqXbdE0fL1D8c2DTiRJOF2i4udTrQpIdks20q_TTDLoB-uZZA',
+            'Authorization': 'Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZ\
+              CI6IjM2NDNkNjdmLTQ1MzctNGEzMS04NmIxLTgyMDk0ZGI0ODU5NCJ9.eyJpYXQi\
+              OjE1MDU5MjE3NzV9.C6wKLoieTsR7ZzOqYopKPDXntxYvxY5emb4nKFqXbdE0fL1\
+              D8c2DTiRJOF2i4udTrQpIdks20q_TTDLoB-uZZA',
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           },
           body: ''
         };
         (payload.param2 == 'on')?
-          iotOptions.body = JSON.stringify({"on": true}):
-          iotOptions.body = JSON.stringify({"on": false});
+          iotOptions.body = JSON.stringify({'on': true}):
+          iotOptions.body = JSON.stringify({'on': false});
         gaVisitor.event(foxycmd, payload.cmd, payload.param,
           (iotOptions ? 0 : 1)).send();
           
         rp(iotOptions)
           .then(function(body) {
+            logger.log('debug', 'body is:' + body);
             shimOptions.body = JSON.stringify(payload);
             payload.utterance = cleanSpeech(payload);
             shimOptions.body = JSON.stringify(payload);
             return rp(shimOptions);
           })
           .catch(function(err) {
-            gaVisitor.event(foxycmderror, payload.cmd, payload.utterance).send();
+            logger.log('debug', 'iot error is:' + err);
+            gaVisitor.event(foxycmderror, payload.cmd, 
+              payload.utterance).send();
             callback('iot error');
           });
       } else if (payload.cmd == FOXY_COMMANDS.WEATHER) {
@@ -170,10 +177,13 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             return rp(shimOptions);
           })
           .catch(function(err) {
-            gaVisitor.event(foxycmderror, payload.cmd, payload.utterance).send();
+            logger.log('debug', 'weather error is:' + err);
+            gaVisitor.event(foxycmderror, payload.cmd, 
+              payload.utterance).send();
             callback('weather error');
           });
-      } else if(payload.cmd == FOXY_COMMANDS.NEXTSLIDE || payload.cmd == FOXY_COMMANDS.PREVIOUSSLIDE) {
+      } else if(payload.cmd == FOXY_COMMANDS.NEXTSLIDE || 
+          payload.cmd == FOXY_COMMANDS.PREVIOUSSLIDE) {
         gaVisitor.event(foxycmd, payload.cmd).send();
         callback('ok');
       } else {
@@ -183,12 +193,13 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           gaVisitor.event(foxycmd, payload.cmd, payload.utterance).send();
         }
 
-        if(payload.cmd != FOXY_COMMANDS.NEXTSLIDE || payload.cmd != FOXY_COMMANDS.PREVIOUSSLIDE) {
+        if(payload.cmd != FOXY_COMMANDS.NEXTSLIDE || 
+          payload.cmd != FOXY_COMMANDS.PREVIOUSSLIDE) {
           return rp(shimOptions);
         }
       }
     })
-    .then(function(shimBody) {
+    .then(function() {
        callback('ok');
        logger.log('debug','finished the chain');
     })
@@ -225,12 +236,12 @@ function cleanSpeech(payload) {
   var final;
   switch (payload.cmd) {
     case FOXY_COMMANDS.WEATHER:
-      final = '\"What\'s the weather in ' +
-        payload.param + '?\"';
+      final = '"What\'s the weather in ' +
+        payload.param + '?"';
       break;
     // TODO: add next slide
     default:
-      final = '\"' + lower.capitalize() + '.\"';
+      final = '"' + lower.capitalize() + '."';
       break;
   }
   return final;
@@ -277,11 +288,11 @@ function parseAIBody(aiBody) {
       break;
     case 'nextslide':
       payload.cmd = FOXY_COMMANDS.NEXTSLIDE;
-      robot.keyTap("right");
+      robot.keyTap('right');
       break;
     case 'lastslide':
       payload.cmd = FOXY_COMMANDS.PREVIOUSSLIDE;
-      robot.keyTap("left");
+      robot.keyTap('left');
       break;
     case 'npr':
       payload.cmd = FOXY_COMMANDS.NPR;
@@ -297,11 +308,11 @@ function parseAIBody(aiBody) {
 function getAiBody(asrBody) {
   let conf = 0;
   let body = {
-    "v":"20150910",
-    "query": '',
-    "lang":"en",
-    "sessionId":  uuidv4(),
-    "timezone":"2017-07-24T10:45:52-0400"
+    'v':'20150910',
+    'query': '',
+    'lang':'en',
+    'sessionId':  uuidv4(),
+    'timezone':'2017-07-24T10:45:52-0400'
   };
   let text = '';
   for (var i in asrBody.data) {
