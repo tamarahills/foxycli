@@ -1,0 +1,14 @@
+language: node_js
+
+sudo: required
+
+script:
+  - npm install
+  - npm test
+  - ./node_modules/.bin/jest --coverage
+
+after_script:
+  - ./node_modules/.bin/codecov
+
+node_js:
+  - 7
