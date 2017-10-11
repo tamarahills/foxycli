@@ -1,4 +1,4 @@
-Foxy client
+Foxy client  [![Build Status](https://travis-ci.org/tamarahills/metrics_controller.svg?branch=master)](https://travis-ci.org/tamarahills/metrics_controller)
 -----------
 This is the an agent that handles the voice processing for the "Hey Foxy"
 application.  
