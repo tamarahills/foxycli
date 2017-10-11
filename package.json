@@ -11,6 +11,7 @@
     "express": "^4.15.4",
     "filelogger": "1.0.3",
     "get-stdin": "^5.0.1",
+    "nconf": "^0.8.5",
     "node-getpocket": "^1.0.0",
     "node-record-lpcm16": "0.3.0",
     "pocket-sdk": "0.0.10",
@@ -19,6 +20,7 @@
     "robotjs": "0.4.7",
     "snowboy": "^1.2.0",
     "stdio": "^0.2.7",
+    "universal-analytics": "^0.4.15",
     "utf8": "^2.1.2"
   }
 }

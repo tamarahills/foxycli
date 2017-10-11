@@ -7,8 +7,21 @@ const Parser = require('./parser');
 const fs = require('fs');
 const Logger = require('filelogger');
 const express = require('express');
+const ua = require('universal-analytics');
+const nconf = require('nconf');
+const uuidv4 =  require('uuid/v4');
+const rp = require('request-promise');
+
+
+const shimOptions = {
+  uri: 'http://localhost:3000/command',
+  method: 'POST',
+  body: '',
+  headers: {'Content-Type': 'application/json'}
+};
 
 const app = express();
+var visitor = '';
 var logger = new Logger('debug', 'error', 'foxy.log');
 
 const ERROR = {
@@ -24,9 +37,43 @@ const stateEnum = {
 };
 
 const Foxy = {};
+
 var parser = new Parser.Parser();
 
 Foxy.init = () => {
+
+  nconf.file({ file: './config/config.json' });
+  nconf.load();
+  var uuid = nconf.get('visitorid');
+
+  // Create the uuid if it's not there.
+  if (!uuid) {
+    console.log('Setting uuid');
+    uuid = uuidv4();
+    nconf.set('visitorid', uuid);
+    nconf.save(function (err) {
+      if (err) {
+        console.error(err.message);
+        return;
+      }
+      console.log('Configuration saved successfully.');
+    });
+  }
+  console.log('Creating visitor. Id is: ' + uuid);
+  var visitor = ua(nconf.get('GAProperty'), uuid).debug();
+  parser.setMetrics(visitor);
+  visitor.event("foxy", "start").send();
+  
+  //Send the GA property info to the extension. NEED TO START EXTENSION FIRST
+  var payload = {
+    cmd: 'GA',
+    param: nconf.get('GAProperty'),
+    param2: uuid
+  };  
+
+  shimOptions.body = JSON.stringify(payload);
+  rp(shimOptions);
+    
   const opts = Object.assign({}),
     models = new Models(),
     foxy = new stream.Writable()
@@ -126,5 +173,6 @@ Foxy.start(Foxy.init());
 
 process.on('uncaughtException', function (exception) {
   console.log(exception.stack);
+  visitor.exception('unhandled process exception: ' + exception.stack).send();
   logger.log('error', exception.stack);
 });
