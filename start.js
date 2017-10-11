@@ -10,6 +10,8 @@ const fs = require('fs');
 const Logger = require('filelogger');
 const bodyParser = require('body-parser').json();
 const rp = require('request-promise');
+const nconf = require('nconf');
+
 var consumer_key, user_key, access_token, userid;
 
 const oathRequestOptions = {
@@ -37,8 +39,9 @@ const addOptions = {
 };
 
 
-consumer_key = 'XXXXXXXXXXXXXXXXXXXXXXXKXXXXXXX';
-
+nconf.file({ file: './config/config.json' });
+nconf.load();
+consumer_key = nconf.get('pocketconsumerkey');
 
 const app = express();
 var logger = new Logger('debug', 'error', 'shim.log');
@@ -107,7 +110,7 @@ function addPocket(url) {
   var addBody = {
     "url": url,
     "consumer_key": consumer_key,
-    "access_token": 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXX'
+    "access_token": access_token
   };
   addOptions.body = JSON.stringify(addBody);
   rp(addOptions)
