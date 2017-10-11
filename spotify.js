@@ -3,10 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 'use strict';
-const fs = require('fs');
 const rp = require('request-promise');
-const Logger = require('filelogger');
-var logger = new Logger('debug', 'error', 'foxy.log');
 
 var client_id = '650a8224cfe949e1882dd2120e453557'; // Your client id
 var client_secret = '59c40781781a480885da1899bf55e9f7'; // Your secret
@@ -18,7 +15,8 @@ var spotifyTokenOptions = {
     grant_type: 'client_credentials'
   },
   headers: {
-    'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64'))
+    'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret)
+      .toString('base64'))
   }
 };
 

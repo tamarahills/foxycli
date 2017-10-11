@@ -4,9 +4,7 @@ const record = require('node-record-lpcm16');
 const stream = require('stream');
 const {Detector, Models} = require('snowboy');
 const Parser = require('./parser');
-const fs = require('fs');
 const Logger = require('filelogger');
-const express = require('express');
 const ua = require('universal-analytics');
 const nconf = require('nconf');
 const uuidv4 =  require('uuid/v4');
@@ -20,13 +18,12 @@ const shimOptions = {
   headers: {'Content-Type': 'application/json'}
 };
 
-const app = express();
 var visitor = '';
 var logger = new Logger('debug', 'error', 'foxy.log');
 
 const ERROR = {
-  NOT_STARTED: "NOT_STARTED",
-  INVALID_INDEX: "INVALID_INDEX"
+  NOT_STARTED: 'NOT_STARTED',
+  INVALID_INDEX: 'INVALID_INDEX'
 };
 
 const stateEnum = {
@@ -62,7 +59,7 @@ Foxy.init = () => {
   console.log('Creating visitor. Id is: ' + uuid);
   var visitor = ua(nconf.get('GAProperty'), uuid).debug();
   parser.setMetrics(visitor);
-  visitor.event("foxy", "start").send();
+  visitor.event('foxy', 'start').send();
   
   //Send the GA property info to the extension. NEED TO START EXTENSION FIRST
   var payload = {
@@ -103,6 +100,9 @@ Foxy.init = () => {
       Foxy.pause(foxy);
       foxy.state = stateEnum.PAUSED;
       parser.parseResults(Buffer.from(foxy.audioBuffer), function(status) {
+        if (status != 'ok') {
+          logger.log('debug', 'parsing returned:' + status);
+        }
         // Start capturing the audio again.
         foxy.audioBuffer = [];
         Foxy.resume(foxy);
