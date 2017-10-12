@@ -66,4 +66,4 @@ $ cd foxycli
 $ npm test
 ```
 ### Troubleshooting Known Issues
-If you get an error message saying that port 3000 is in use, quit Firefox, reload the extension.
+
