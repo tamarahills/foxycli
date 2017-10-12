@@ -120,12 +120,17 @@ function addPocket(url) {
     });
 }
 
+/*
+ * This is called 1) When the extension is unloaded from the sidebar and
+ * 2) when the user removes or reloads it as a temporary extension.
+ */
 stdin.on('end', function () {
   logger.log('debug', 'got end');
 
   inputChunks = [];
   tempBytesCount = 0;
   bytesToRead = 0;
+  gracefulShutdown();
 });
 
 //
@@ -170,6 +175,22 @@ app.get('/redirecturi', function(req, res) {
     });
 });
 
-app.listen(3000, function () {
+var server = app.listen(3000, function () {
   logger.log('debug', 'initializing startup shim');
 });
+
+// this function is called when you want the server to die gracefully
+// i.e. wait for existing connections
+var gracefulShutdown = function() {
+  console.log("Received kill signal, shutting down gracefully.");
+  server.close(function() {
+    console.log("Closed out remaining connections.");
+    process.exit()
+  });
+  
+   // if after 
+   setTimeout(function() {
+       console.error("Could not close connections in time, forcefully shutting down");
+       process.exit()
+  }, 10*1000);
+}
