@@ -182,15 +182,15 @@ var server = app.listen(3000, function () {
 // this function is called when you want the server to die gracefully
 // i.e. wait for existing connections
 var gracefulShutdown = function() {
-  console.log("Received kill signal, shutting down gracefully.");
+  console.log('Received kill signal, shutting down gracefully.');
   server.close(function() {
-    console.log("Closed out remaining connections.");
+    console.log('Closed out remaining connections.');
     process.exit()
   });
   
    // if after 
    setTimeout(function() {
-       console.error("Could not close connections in time, forcefully shutting down");
+       console.error('Could not close connections in time, shutting down');
        process.exit()
   }, 10*1000);
 }

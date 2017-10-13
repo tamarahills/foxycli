@@ -35,7 +35,8 @@ const FOXY_COMMANDS = {
   'IOT': 'IOT',
   'POCKET': 'POCKET',
   'NPR': 'NPR',
-  'GA': 'GA'
+  'GA': 'GA',
+  'FEEDBACK': 'FEEDBACK'
 };
 
 const asrOptions = {
@@ -296,6 +297,10 @@ function parseAIBody(aiBody) {
       break;
     case 'npr':
       payload.cmd = FOXY_COMMANDS.NPR;
+      gaVisitor.event(foxycmd, payload.cmd).send();
+      break;
+    case 'feedback':
+      payload.cmd = FOXY_COMMANDS.FEEDBACK;
       gaVisitor.event(foxycmd, payload.cmd).send();
       break;
     default:
