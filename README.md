@@ -37,10 +37,11 @@ $ cd foxycli
 $ npm install
 ```
 Download the "Hey Foxy" model from https://snowboy.kitt.ai/dashboard:
-1.  Search on "Hey Foxy"
-2.  Record a few samples while you are there (Optional)
-3.  Click on the "download icon"
-4.  Save "Hey_Foxy.pmdl" to the foxycli/resources directory.
+1. mkdir foxycli/resources 
+2.  Search on "Hey Foxy"
+3.  Record a few samples while you are there (Optional)
+4.  Click on the "download icon"
+5.  Save "Hey_Foxy.pmdl" to the foxycli/resources directory.
 
 ### Start the agent
 
