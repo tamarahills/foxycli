@@ -6,10 +6,14 @@
   "license": "MPL-2.0",
   "scripts": {
     "start": "pm2 start ecosystem.config.js",
+    "save": "pm2 save",
     "startup": "pm2 startup",
     "test": "npm run lint && npm run mocha",
     "lint": "eslint .",
     "mocha": "./test/run-tests.sh"
+  },
+  "engines": {
+    "node": ">=7.0.0 <8.0"
   },
   "dependencies": {
     "babel-eslint": "^8.0.1",
