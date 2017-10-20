@@ -38,7 +38,8 @@
     "snowboy": "^1.2.0",
     "stdio": "^0.2.7",
     "universal-analytics": "^0.4.15",
-    "utf8": "^2.1.2"
+    "utf8": "^2.1.2",
+    "validator": "^9.0.0"
   },
   "jest": {
     "coverageDirectory": "./coverage/",

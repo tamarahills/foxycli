@@ -9,6 +9,7 @@ const Logger = require('filelogger');
 const bodyParser = require('body-parser').json();
 const rp = require('request-promise');
 const nconf = require('nconf');
+const validator = require('validator');
 
 var consumer_key, user_key, access_token, userid;
 
@@ -36,10 +37,12 @@ const addOptions = {
             'X-Accept': 'application/json'}
 };
 
-
+// Read the configuration file for pocket info.
 nconf.file({ file: './config/config.json' });
 nconf.load();
-consumer_key = nconf.get('pocketconsumerkey');
+consumer_key = nconf.get('pocketconsumerkey');  // identity of foxy ext
+access_token = nconf.get('access_token');       // user's oauth token
+userid = nconf.get('userid');                   // userid
 
 const app = express();
 var logger = new Logger('debug', 'error', 'shim.log');
@@ -84,26 +87,42 @@ stdin.on('data', function (chunk) {
   if (bytesToRead == 0) {
     const bufLength = Buffer.from(chunk);
     bytesToRead = bufLength.readUInt32LE(0);
-    logger.log('debug', 'bytes to read is:' + bytesToRead);
+
+    if (chunk.length != 4) {
+      tempBytesCount += chunk.length - 4;
+      inputChunks.push(Buffer.from(
+        bufLength.slice(5, chunk.length - 1)).toString());
+      // figure out if this is the rest of the buffer or if more to come
+      if (bytesToRead + 4 == chunk.length) {
+        pocketHelper(inputChunks.toString());
+      }
+    }
   } else {
     tempBytesCount += chunk.length;
     inputChunks.push(chunk);
     if(tempBytesCount == bytesToRead) {
       var stringurl = inputChunks.toString();
-      var newStringUrl = stringurl.replace(/['"]+/g, '');
-      logger.log('debug', 'stringurl:' +stringurl);
-      logger.log('debug', 'newstring:' +newStringUrl);
-      addPocket(newStringUrl);
-      inputChunks = [];
-      tempBytesCount = 0;
-      bytesToRead = 0;
+      pocketHelper(stringurl);
     }
     logger.log('debug', chunk);
   }
 });
 
+function pocketHelper(stringurl) {
+  var newStringUrl = stringurl.replace(/['"]+/g, '');
+  inputChunks = [];
+  tempBytesCount = 0;
+  bytesToRead = 0;
+  addPocket(newStringUrl);
+}
+
 function addPocket(url) {
-  logger.log('debug', 'calling addPocket');
+  logger.log('debug', 'url is: ' + url);
+  if (!validator.isURL(url)) {
+    logger.log('debug', 'Malformed URL');
+    return;
+  }
+
   var addBody = {
     'url': url,
     'consumer_key': consumer_key,
@@ -112,10 +131,10 @@ function addPocket(url) {
   addOptions.body = JSON.stringify(addBody);
   rp(addOptions)
     .then(function() {
-      logger.log('success');
+      logger.log('debug', 'pocket add success');
     })
     .catch(function(err) {
-      logger.log('Failed to add to pocket');
+      logger.log('debug', 'Failed to add to pocket');
       logger.log('error', err);
     });
 }
@@ -126,11 +145,15 @@ function addPocket(url) {
  */
 stdin.on('end', function () {
   logger.log('debug', 'got end');
-
+  console.log('GOT AN END');
   inputChunks = [];
   tempBytesCount = 0;
   bytesToRead = 0;
   gracefulShutdown();
+});
+
+stdin.on('error', function(err) {
+  console.error(err);
 });
 
 //
@@ -144,35 +167,41 @@ app.get('/pocket', function(req, res) {
   rp(oathRequestOptions)
     .then(function(body) {
       let jsonBody = JSON.parse(body);
-      console.log('Code is:' + jsonBody.code);
+      logger.log('debug', 'Code is:' + jsonBody.code);
       user_key = jsonBody.code;
 
       var redir = 'https://getpocket.com/auth/authorize?request_token=' +
       user_key + '&redirect_uri=http://127.0.0.1:3000/redirecturi';
-      console.log(redir);
+      // console.log(redir);
 
       return res.redirect(redir);
     });
 });
 
 app.get('/redirecturi', function(req, res) {
-  console.log('redirecturi');
-  console.log(req.body);
-  console.log(res);
+  logger.log('debug', 'calling redirect');
 
   var authBody = {
     'consumer_key':consumer_key,
     'code':user_key
   };
   finalAuthorizeOptions.body = JSON.stringify(authBody);
-
+  logger.log('debug', 'calling redirect');
+  
   rp(finalAuthorizeOptions)
     .then(function(body) {
-      console.log(body);
       let jsonBody = JSON.parse(body);
       access_token = jsonBody.access_token;
       userid = jsonBody.username;
+      // Save to the config so they don't need to redo this.
+      nconf.set('access_token', access_token);
+      nconf.set('userid', userid);
+      nconf.save();
+    })
+    .catch(function(err) {
+      logger.log('debug','Call failed' + err);
     });
+    res.status(200).send('OK');
 });
 
 var server = app.listen(3000, function () {
@@ -188,7 +217,7 @@ var gracefulShutdown = function() {
     process.exit()
   });
   
-   // if after 
+   // if after ten seconds, it's not closing, shut down.
    setTimeout(function() {
        console.error('Could not close connections in time, shutting down');
        process.exit()
