@@ -4,11 +4,19 @@ const record = require('node-record-lpcm16');
 const stream = require('stream');
 const {Detector, Models} = require('snowboy');
 const Parser = require('./parser');
-const Logger = require('filelogger');
 const ua = require('universal-analytics');
 const nconf = require('nconf');
 const uuidv4 =  require('uuid/v4');
 const rp = require('request-promise');
+
+var logOpts = {
+  logDirectory: __dirname ,
+  fileNamePattern: 'foxy-<date>.log',
+  dateFormat:'YYYY.MM.DD-HHa'
+};
+
+var logger = require('simple-node-logger').createRollingFileLogger(logOpts);
+logger.setLevel('debug');
 
 
 const shimOptions = {
@@ -19,7 +27,6 @@ const shimOptions = {
 };
 
 var visitor = '';
-var logger = new Logger('debug', 'error', 'foxy.log');
 
 const ERROR = {
   NOT_STARTED: 'NOT_STARTED',
@@ -92,7 +99,7 @@ Foxy.init = () => {
   opts.language =  'en-US'
 
   const detector = foxy.detector = new Detector(opts)
-  logger.log('debug', 'Created detector');
+  logger.debug('Created detector');
 
   detector.on('silence', () => {
     if(foxy.state == stateEnum.STREAMING) {
@@ -101,7 +108,7 @@ Foxy.init = () => {
       foxy.state = stateEnum.PAUSED;
       parser.parseResults(Buffer.from(foxy.audioBuffer), function(status) {
         if (status != 'ok') {
-          logger.log('debug', 'parsing returned:' + status);
+          logger.debug('parsing returned:' + status);
         }
         // Start capturing the audio again.
         foxy.audioBuffer = [];
@@ -113,9 +120,9 @@ Foxy.init = () => {
   });
 
   detector.on('sound', (buffer) =>  {
-    logger.log('debug', 'sound');
+    logger.debug('sound');
     if(foxy.state == stateEnum.STREAMING) {
-      logger.log('State is STREAMING');
+      logger.debug('State is STREAMING');
       Array.prototype.push.apply(foxy.audioBuffer, buffer);
     }
     foxy.emit('sound', buffer);
@@ -133,13 +140,13 @@ Foxy.init = () => {
         foxy.state = stateEnum.STREAMING;
         Array.prototype.push.apply(foxy.audioBuffer, buffer);
         foxy.emit('hotword', index, triggerHotword);
-        logger.log('debug', 'FOUND KEYWORD');
+        logger.debug('FOUND KEYWORD');
       } catch (e) {
-        logger.log('error', 'Failed on trigger');
+        logger.error('Failed on trigger');
         throw ERROR.INVALID_INDEX;
       }
     } else {
-      logger.log('error', 'Foxy not started');
+      logger.error('Foxy not started');
       throw ERROR.NOT_STARTED;
     }
   }
@@ -148,7 +155,7 @@ Foxy.init = () => {
 };
 
 Foxy.start = foxy => {
-  logger.log('debug', 'Entering Foxy.start');
+  logger.debug('Entering Foxy.start');
   foxy.mic = record.start({
     threshold: 0,
     verbose: true
@@ -157,7 +164,7 @@ Foxy.start = foxy => {
   foxy.mic.pipe(foxy.detector);
   foxy.state = stateEnum.LISTENING;
   foxy.started = true;
-  logger.log('debug', 'Leaving Foxy.start');
+  logger.debug('Leaving Foxy.start');
 }
 
 Foxy.trigger = (foxy, index, hotword) => foxy.trigger(index, hotword)
@@ -168,11 +175,11 @@ Foxy.resume = foxy => foxy.mic.resume()
 
 Foxy.stop = () => record.stop()
 
-logger.log('debug', 'Initializing Foxy Process.');
+logger.debug('Initializing Foxy Process.');
 Foxy.start(Foxy.init());
 
 process.on('uncaughtException', function (exception) {
   console.log(exception.stack);
   visitor.exception('unhandled process exception: ' + exception.stack).send();
-  logger.log('error', exception.stack);
+  logger.error(exception.stack);
 });
