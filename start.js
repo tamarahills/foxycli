@@ -5,11 +5,20 @@
 'use strict';
 
 const express = require('express')
-const Logger = require('filelogger');
 const bodyParser = require('body-parser').json();
 const rp = require('request-promise');
 const nconf = require('nconf');
 const validator = require('validator');
+
+var logOpts = {
+  logDirectory: __dirname ,
+  fileNamePattern: 'shim-<date>.log',
+  dateFormat:'YYYY.MM.DD-HHa'
+};
+
+var logger = require('simple-node-logger').createRollingFileLogger(logOpts);
+logger.setLevel('debug');
+
 
 var consumer_key, user_key, access_token, userid;
 
@@ -45,8 +54,6 @@ access_token = nconf.get('access_token');       // user's oauth token
 userid = nconf.get('userid');                   // userid
 
 const app = express();
-var logger = new Logger('debug', 'error', 'shim.log');
-
 app.get('/', function (req, res) {
   res.send('Hello World!')
 })
@@ -56,11 +63,11 @@ app.get('/start', function (req, res) {
 });
 
 app.post('/command', bodyParser, function(req, res) {
-  logger.log('debug', 'Got a command:' + JSON.stringify(req.body));
+  logger.debug('Got a command:' + JSON.stringify(req.body));
   var command = req.body.cmd;
-  logger.log('debug', 'cmd is:' + command);
+  logger.debug('cmd is:' + command);
   if (command == 'POCKET') {
-    logger.log('debug', 'command is POCKET');
+    logger.debug('command is POCKET');
     req.body.param = userid;
     req.body.param2 = access_token;
     req.body.param3 = consumer_key;
@@ -83,7 +90,7 @@ var stdin = process.stdin,
 stdin.setEncoding('utf8');
 
 stdin.on('data', function (chunk) {
-  logger.log('debug', 'got data');
+  logger.debug('got data');
   if (bytesToRead == 0) {
     const bufLength = Buffer.from(chunk);
     bytesToRead = bufLength.readUInt32LE(0);
@@ -104,7 +111,7 @@ stdin.on('data', function (chunk) {
       var stringurl = inputChunks.toString();
       pocketHelper(stringurl);
     }
-    logger.log('debug', chunk);
+    logger.debug(chunk);
   }
 });
 
@@ -117,9 +124,9 @@ function pocketHelper(stringurl) {
 }
 
 function addPocket(url) {
-  logger.log('debug', 'url is: ' + url);
+  logger.debug('url is: ' + url);
   if (!validator.isURL(url)) {
-    logger.log('debug', 'Malformed URL');
+    logger.debug('Malformed URL');
     return;
   }
 
@@ -131,11 +138,11 @@ function addPocket(url) {
   addOptions.body = JSON.stringify(addBody);
   rp(addOptions)
     .then(function() {
-      logger.log('debug', 'pocket add success');
+      logger.debug('pocket add success');
     })
     .catch(function(err) {
-      logger.log('debug', 'Failed to add to pocket');
-      logger.log('error', err);
+      logger.debug('Failed to add to pocket');
+      logger.error(err);
     });
 }
 
@@ -144,7 +151,7 @@ function addPocket(url) {
  * 2) when the user removes or reloads it as a temporary extension.
  */
 stdin.on('end', function () {
-  logger.log('debug', 'got end');
+  logger.debug('got end');
   console.log('GOT AN END');
   inputChunks = [];
   tempBytesCount = 0;
@@ -167,26 +174,25 @@ app.get('/pocket', function(req, res) {
   rp(oathRequestOptions)
     .then(function(body) {
       let jsonBody = JSON.parse(body);
-      logger.log('debug', 'Code is:' + jsonBody.code);
+      logger.debug('Code is:' + jsonBody.code);
       user_key = jsonBody.code;
 
       var redir = 'https://getpocket.com/auth/authorize?request_token=' +
       user_key + '&redirect_uri=http://127.0.0.1:3000/redirecturi';
-      // console.log(redir);
 
       return res.redirect(redir);
     });
 });
 
 app.get('/redirecturi', function(req, res) {
-  logger.log('debug', 'calling redirect');
+  logger.debug('calling redirect');
 
   var authBody = {
     'consumer_key':consumer_key,
     'code':user_key
   };
   finalAuthorizeOptions.body = JSON.stringify(authBody);
-  logger.log('debug', 'calling redirect');
+  logger.debug('calling redirect');
   
   rp(finalAuthorizeOptions)
     .then(function(body) {
@@ -199,13 +205,13 @@ app.get('/redirecturi', function(req, res) {
       nconf.save();
     })
     .catch(function(err) {
-      logger.log('debug','Call failed' + err);
+      logger.debug('Call failed' + err);
     });
     res.status(200).send('OK');
 });
 
 var server = app.listen(3000, function () {
-  logger.log('debug', 'initializing startup shim');
+  logger.debug('initializing startup shim');
 });
 
 // this function is called when you want the server to die gracefully
