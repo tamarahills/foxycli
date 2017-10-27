@@ -101,7 +101,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
       return rp(aiOptions);
     })
     .then(function(aiBody) {
-      var payload = parseAIBody(aiBody);
+      var payload = parseAIBody(aiBody, utterance);
       payload.utterance = utterance;
       if(payload.cmd == FOXY_COMMANDS.SPOTIFY) {
         let playlistBrowseUri = 'https://api.spotify.com/v1/browse/categories/'
@@ -254,7 +254,7 @@ function cleanSpeech(payload) {
   return final;
 }
 
-function parseAIBody(aiBody) {
+function parseAIBody(aiBody, theUtterance) {
   let jsonBody = JSON.parse(aiBody);
   var payload = {
     cmd: 'none',
@@ -307,7 +307,7 @@ function parseAIBody(aiBody) {
       break;
     case 'feedback':
       payload.cmd = FOXY_COMMANDS.FEEDBACK;
-      gaVisitor.event(foxycmd, payload.cmd).send();
+      gaVisitor.event(foxycmd, payload.cmd, theUtterance).send();
       break;
     default:
       payload.cmd = FOXY_COMMANDS.NONE;
