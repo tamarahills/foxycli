@@ -19,7 +19,9 @@ Start|Stop command
 {
   "ec": "foxy",
   "ea": "start"|"stop",
-  "v": "1"
+  "v": "1",
+  "cid": <randomly generated uuid>,
+  "uid": <randomly generated stored uuid>
 }
 ```
 
