@@ -20,13 +20,14 @@ var logger = require('simple-node-logger').createRollingFileLogger(logOpts);
 logger.setLevel('debug');
 
 var gaVisitor = '';
-
+var gUuid = '';
 
 function Parser() {
 }
 
-Parser.prototype.setMetrics = function(visitor) {
+Parser.prototype.setMetrics = function(visitor, uuid) {
   gaVisitor = visitor;
+  gUuid = uuid;
 }
 
 const FOXY_COMMANDS = {
@@ -82,6 +83,12 @@ const shimOptions = {
 Parser.prototype.parseResults = function(foxyBuffer, callback) {
   asrOptions.body = foxyBuffer;
   var utterance = '';
+  var ga_params = {
+    ec: "foxycmd",
+    uid: gUuid,
+    cd1: gUuid
+  };
+  
 
   // Send the speech buffer to Kaldi
   rp(asrOptions)
@@ -117,10 +124,14 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             payload.utterance = cleanSpeech(payload);
             shimOptions.body = JSON.stringify(payload);
             if (payload.param == '') {
-              gaVisitor.event(foxycmderror, FOXY_COMMANDS.SPOTIFY, 
-                payload.utterance).send();
+              ga_params.ec = 'foxycmderror';
+              ga_params.ea = payload.cmd;
+              ga_params.el = payload.utterance;
+              gaVisitor.event(ga_params).send();
             } else {
-              gaVisitor.event(foxycmd, payload.cmd, payload.param).send();
+              ga_params.ea = payload.cmd;
+              ga_params.el = payload.param;
+              gaVisitor.event(ga_params).send();
             }
             return rp(shimOptions);
           })
@@ -148,8 +159,10 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
         (payload.param2 == 'on')?
           iotOptions.body = JSON.stringify({'on': true}):
           iotOptions.body = JSON.stringify({'on': false});
-        gaVisitor.event(foxycmd, payload.cmd, payload.param,
-          (iotOptions ? 0 : 1)).send();
+        ga_params.ea = payload.cmd;
+        ga_params.el = payload.param;
+        ga_params.ev = (iotOptions ? 0 : 1);
+        gaVisitor.event(ga_params).send();
           
         rp(iotOptions)
           .then(function(body) {
@@ -161,8 +174,10 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           })
           .catch(function(err) {
             logger.debug('iot error is:' + err);
-            gaVisitor.event(foxycmderror, payload.cmd, 
-              payload.utterance).send();
+            ga_params.ec = foxycmderror;
+            ga_params.ea = payload.cmd;
+            ga_params.el = payload.utterance;
+            gaVisitor.event(ga_params).send();
             callback('iot error');
           });
       } else if (payload.cmd == FOXY_COMMANDS.WEATHER) {
@@ -178,26 +193,33 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             payload.param5 = jsonResults.weather[0].main; //Description
             payload.utterance = cleanSpeech(payload);
             
-            gaVisitor.event(foxycmd, payload.cmd, payload.param).send();
+            ga_params.ea = payload.cmd;
+            ga_params.el = payload.param;
+            gaVisitor.event(ga_params).send();
     
             shimOptions.body = JSON.stringify(payload);
             return rp(shimOptions);
           })
           .catch(function(err) {
             logger.debug('weather error is:' + err);
-            gaVisitor.event(foxycmderror, payload.cmd, 
-              payload.utterance).send();
+            ga_params.ec = foxycmderror;
+            ga_params.ea = payload.cmd;
+            ga_params.el = payload.utterance;
+            gaVisitor.event(ga_params).send();
             callback('weather error');
           });
       } else if(payload.cmd == FOXY_COMMANDS.NEXTSLIDE || 
           payload.cmd == FOXY_COMMANDS.PREVIOUSSLIDE) {
-        gaVisitor.event(foxycmd, payload.cmd).send();
+        ga_params.ea = payload.cmd;
+        gaVisitor.event(ga_params).send();
         callback('ok');
       } else {
         payload.utterance = cleanSpeech(payload);
         shimOptions.body = JSON.stringify(payload);
         if (payload.cmd == FOXY_COMMANDS.NONE) {
-          gaVisitor.event(foxycmd, payload.cmd, payload.utterance).send();
+          ga_params.ea = payload.cmd;
+          ga_params.el = payload.utterance;
+          gaVisitor.event(ga_params).send();
         }
 
         if(payload.cmd != FOXY_COMMANDS.NEXTSLIDE || 
@@ -262,6 +284,12 @@ function parseAIBody(aiBody, theUtterance) {
     param2: 'none',
   };
 
+  var ga_params = {
+    ec: "foxycmd",
+    uid: gUuid,
+    cd1: gUuid
+  };
+
   logger.debug(aiBody);
   //Determine the action from the API.AI intent parser
   switch (jsonBody.result.action) {
@@ -276,8 +304,11 @@ function parseAIBody(aiBody, theUtterance) {
       payload.param = parseTimer(jsonBody.result);
       payload.param2 = jsonBody.result.parameters.any;
 
-      gaVisitor.event(foxycmd, payload.cmd, payload.param2, 
-        payload.param).send();
+      ga_params.ea = payload.cmd;
+      ga_params.el = payload.param2;
+      ga_params.ev = payload.param;
+      
+      gaVisitor.event(ga_params).send();
       
       break;
     case 'play':
@@ -291,7 +322,9 @@ function parseAIBody(aiBody, theUtterance) {
       break;
     case 'pocket':
       payload.cmd = FOXY_COMMANDS.POCKET;
-      gaVisitor.event(foxycmd, payload.cmd, 'add').send();
+      ga_params.ea = payload.cmd;
+      ga_params.el = 'add';
+      gaVisitor.event(ga_params).send();
       break;
     case 'nextslide':
       payload.cmd = FOXY_COMMANDS.NEXTSLIDE;
@@ -303,11 +336,15 @@ function parseAIBody(aiBody, theUtterance) {
       break;
     case 'npr':
       payload.cmd = FOXY_COMMANDS.NPR;
-      gaVisitor.event(foxycmd, payload.cmd).send();
+      ga_params.ea = payload.cmd;
+      gaVisitor.event(ga_params).send();
       break;
     case 'feedback':
       payload.cmd = FOXY_COMMANDS.FEEDBACK;
-      gaVisitor.event(foxycmd, payload.cmd, theUtterance).send();
+      ga_params.ea = payload.cmd;
+      ga_params.el = theUtterance;
+      
+      gaVisitor.event(ga_params).send();
       break;
     default:
       payload.cmd = FOXY_COMMANDS.NONE;
