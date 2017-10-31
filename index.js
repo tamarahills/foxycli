@@ -65,8 +65,14 @@ Foxy.init = () => {
   }
   console.log('Creating visitor. Id is: ' + uuid);
   var visitor = ua(nconf.get('GAProperty'), uuid).debug();
-  parser.setMetrics(visitor);
-  visitor.event('foxy', 'start').send();
+  parser.setMetrics(visitor, uuid);
+  var ga_params = {
+    ec: "foxy",
+    ea: "start",
+    cd1: uuid,
+    uid: uuid
+  };
+  visitor.event(ga_params).send();
   
   //Send the GA property info to the extension. NEED TO START EXTENSION FIRST
   var payload = {
