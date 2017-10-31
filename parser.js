@@ -84,7 +84,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
   asrOptions.body = foxyBuffer;
   var utterance = '';
   var ga_params = {
-    ec: "foxycmd",
+    ec: foxycmd,
     uid: gUuid,
     cd1: gUuid
   };
@@ -285,7 +285,7 @@ function parseAIBody(aiBody, theUtterance) {
   };
 
   var ga_params = {
-    ec: "foxycmd",
+    ec: foxycmd,
     uid: gUuid,
     cd1: gUuid
   };

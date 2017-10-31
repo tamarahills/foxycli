@@ -67,8 +67,8 @@ Foxy.init = () => {
   var visitor = ua(nconf.get('GAProperty'), uuid).debug();
   parser.setMetrics(visitor, uuid);
   var ga_params = {
-    ec: "foxy",
-    ea: "start",
+    ec: 'foxy',
+    ea: 'start',
     cd1: uuid,
     uid: uuid
   };
