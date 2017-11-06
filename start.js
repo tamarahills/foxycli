@@ -11,7 +11,7 @@ const nconf = require('nconf');
 const validator = require('validator');
 
 var logOpts = {
-  logDirectory: __dirname ,
+  logDirectory: __dirname + '/logs',
   fileNamePattern: 'shim-<date>.log',
   dateFormat:'YYYY.MM.DD-HHa'
 };

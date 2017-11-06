@@ -23,6 +23,7 @@
     "errorhandler": "^1.5.0",
     "eslint": "^4.8.0",
     "express": "^4.15.4",
+    "find-remove": "^1.0.1",
     "get-stdin": "^5.0.1",
     "jest": "^21.2.1",
     "mocha": "^4.0.1",
