@@ -11,7 +11,7 @@ const foxycmderror = 'foxycmderror';
 var SpotifyConn= require('./spotify');
 
 var logOpts = {
-  logDirectory: __dirname ,
+  logDirectory: __dirname + '/logs' ,
   fileNamePattern: 'foxy-<date>.log',
   dateFormat:'YYYY.MM.DD-HHa'
 };

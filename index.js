@@ -8,9 +8,10 @@ const ua = require('universal-analytics');
 const nconf = require('nconf');
 const uuidv4 =  require('uuid/v4');
 const rp = require('request-promise');
+const findRemoveSync = require('find-remove');
 
 var logOpts = {
-  logDirectory: __dirname ,
+  logDirectory: __dirname + '/logs' ,
   fileNamePattern: 'foxy-<date>.log',
   dateFormat:'YYYY.MM.DD-HHa'
 };
@@ -162,6 +163,14 @@ Foxy.init = () => {
 
 Foxy.start = foxy => {
   logger.debug('Entering Foxy.start');
+
+  // Clear out any of the logs that are older than 3 hours
+  setInterval(function() {
+    findRemoveSync(__dirname + '/logs', {age: {seconds: 10800}, 
+      extensions: '.log'})
+  }, 3600000);
+
+
   foxy.mic = record.start({
     threshold: 0,
     verbose: true
