@@ -93,9 +93,23 @@ Foxy.init = () => {
   foxy.state = stateEnum.NOT_STARTED
   foxy.audioBuffer = []
 
+  // Setup the sensitivity for the model default to 0.5
+  var wwSensitivity = nconf.get('sensitivity');
+  if (!wwSensitivity) {
+    console.log('Setting sensitivity');
+    nconf.set('sensitivity', '0.5');
+    nconf.save(function (err) {
+      if (err) {
+        console.error(err.message);
+        return;
+      }
+      console.log('Configuration saved successfully.');
+    });
+  }
+
   models.add({
     file:  'resources/Hey_Foxy.pmdl',
-    sensitivity: '0.5',
+    sensitivity: wwSensitivity,
     hotwords: 'Hey Foxy'
   });
 
