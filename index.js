@@ -162,6 +162,12 @@ Foxy.init = () => {
         Array.prototype.push.apply(foxy.audioBuffer, buffer);
         foxy.emit('hotword', index, triggerHotword);
         logger.debug('FOUND KEYWORD');
+        // Send a message to the extension so UI can be updated when recording.
+        var payload = {
+          cmd: 'KEYWORD'
+        };
+        shimOptions.body = JSON.stringify(payload);
+        rp(shimOptions);
       } catch (e) {
         logger.error('Failed on trigger');
         throw ERROR.INVALID_INDEX;
