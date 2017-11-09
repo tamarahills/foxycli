@@ -44,6 +44,8 @@ const stateEnum = {
 const Foxy = {};
 var silenceCount = 0;
 var maxSilence = 5;
+var defaultGain = 2.0;
+var defaultSensitivity = '0.5';
 
 var parser = new Parser.Parser();
 
@@ -116,7 +118,8 @@ Foxy.init = () => {
   var wwSensitivity = nconf.get('sensitivity');
   if (!wwSensitivity) {
     console.log('Setting sensitivity');
-    nconf.set('sensitivity', '0.5');
+    nconf.set('sensitivity', defaultSensitivity);
+    wwSensitivity = defaultSensitivity;
     nconf.save(function (err) {
       if (err) {
         console.error(err.message);
@@ -125,6 +128,22 @@ Foxy.init = () => {
       console.log('Configuration saved successfully.');
     });
   }
+
+  // Setup the audio gain for the model default to 1.0
+  var audioGain = nconf.get('gain');
+  if (!audioGain) {
+    console.log('Setting gain');
+    nconf.set('gain', defaultGain);
+    audioGain = defaultGain;
+    nconf.save(function (err) {
+      if (err) {
+        console.error(err.message);
+        return;
+      }
+      console.log('Configuration saved successfully.');
+    });
+  }
+  console.log('Gain is: ' + audioGain);
 
   models.add({
     file:  'resources/Hey_Foxy.pmdl',
@@ -135,7 +154,7 @@ Foxy.init = () => {
   // defaults
   opts.models = models
   opts.resource = 'resources/common.res'
-  opts.audioGain =  2.0
+  opts.audioGain =  audioGain
   opts.language =  'en-US'
 
   const detector = foxy.detector = new Detector(opts)
