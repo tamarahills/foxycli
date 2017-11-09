@@ -42,6 +42,8 @@ const stateEnum = {
 };
 
 const Foxy = {};
+var silenceCount = 0;
+var maxSilence = 5;
 
 var parser = new Parser.Parser();
 
@@ -84,7 +86,24 @@ Foxy.init = () => {
 
   shimOptions.body = JSON.stringify(payload);
   rp(shimOptions);
-    
+
+  var sCount = nconf.get('silencecount');
+  if (!sCount) {
+    console.log('Setting uuid');
+    uuid = uuidv4();
+    nconf.set('silencecount', maxSilence);
+    nconf.save(function (err) {
+      if (err) {
+        console.error(err.message);
+        return;
+      }
+      console.log('Configuration saved successfully.');
+    });
+  } else {
+    console.log('silence count is: ' + sCount);
+    maxSilence = sCount;
+  } 
+
   const opts = Object.assign({}),
     models = new Models(),
     foxy = new stream.Writable()
@@ -123,19 +142,23 @@ Foxy.init = () => {
   logger.debug('Created detector');
 
   detector.on('silence', () => {
-    if(foxy.state == stateEnum.STREAMING) {
-      // Stop streaming and pause the microphone.
-      Foxy.pause(foxy);
-      foxy.state = stateEnum.PAUSED;
-      parser.parseResults(Buffer.from(foxy.audioBuffer), function(status) {
-        if (status != 'ok') {
-          logger.debug('parsing returned:' + status);
-        }
-        // Start capturing the audio again.
-        foxy.audioBuffer = [];
-        Foxy.resume(foxy);
-        foxy.state = stateEnum.LISTENING;
-      });
+    if (foxy.state == stateEnum.STREAMING) {
+      silenceCount++;
+      if (silenceCount > maxSilence) {
+        // Stop streaming and pause the microphone.
+        Foxy.pause(foxy);
+        foxy.state = stateEnum.PAUSED;
+        parser.parseResults(Buffer.from(foxy.audioBuffer), function(status) {
+          if (status != 'ok') {
+            logger.debug('parsing returned:' + status);
+          }
+          // Start capturing the audio again.
+          foxy.audioBuffer = [];
+          Foxy.resume(foxy);
+          foxy.state = stateEnum.LISTENING;
+          silenceCount = 0;
+        });
+      }
     }
     foxy.emit('silence');
   });
