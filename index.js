@@ -187,16 +187,19 @@ Foxy.init = () => {
     if(foxy.state == stateEnum.STREAMING) {
       logger.debug('State is STREAMING');
       Array.prototype.push.apply(foxy.audioBuffer, buffer);
+    } else {
+      foxy.state = stateEnum.STREAMING;
+      Array.prototype.push.apply(foxy.audioBuffer, buffer);
     }
     foxy.emit('sound', buffer);
   });
 
   // When a hotword is detected pipe the audio stream to speech detection
   detector.on('hotword', (index, hotword, buffer) => {
-    foxy.trigger(index, hotword, buffer)
+    // foxy.trigger(index, hotword, buffer)
   })
 
-  foxy.trigger = (index, hotword, buffer) => {
+/*  foxy.trigger = (index, hotword, buffer) => {
     if (foxy.started) {
       try {
         let triggerHotword = (index == 0) ? hotword : models.lookup(index);
@@ -218,7 +221,7 @@ Foxy.init = () => {
       logger.error('Foxy not started');
       throw ERROR.NOT_STARTED;
     }
-  }
+  }*/
 
   return foxy;
 };
