@@ -9,6 +9,7 @@ const uuidv4 =  require('uuid/v4');
 const foxycmd = 'foxycmd';
 const foxycmderror = 'foxycmderror';
 var SpotifyConn= require('./spotify');
+const timezone = require('./libs/timezone');
 
 var logOpts = {
   logDirectory: __dirname + '/logs' ,
@@ -196,7 +197,11 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             ga_params.ea = payload.cmd;
             ga_params.el = payload.param;
             gaVisitor.event(ga_params).send();
-    
+
+            return timezone.getLocaltime(jsonResults.coord);
+          })
+          .then(time => {
+            payload.localTime = time;
             shimOptions.body = JSON.stringify(payload);
             return rp(shimOptions);
           })
