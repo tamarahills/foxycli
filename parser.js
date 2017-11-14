@@ -4,12 +4,12 @@
 
 'use strict';
 const rp = require('request-promise');
-const robot = require('robotjs');
 const uuidv4 =  require('uuid/v4');
 const foxycmd = 'foxycmd';
 const foxycmderror = 'foxycmderror';
 var SpotifyConn= require('./spotify');
 const timezone = require('./libs/timezone');
+var childProcess = require('child_process');
 
 var logOpts = {
   logDirectory: __dirname + '/logs' ,
@@ -333,12 +333,14 @@ function parseAIBody(aiBody, theUtterance) {
       break;
     case 'nextslide':
       payload.cmd = FOXY_COMMANDS.NEXTSLIDE;
-      robot.keyTap('right');
+      childProcess.exec('"/Users/mozilla/.nvm/versions/node/v7.7.2/bin/node" '
+        + './keysend.js right');
       break;
     case 'lastslide':
       payload.cmd = FOXY_COMMANDS.PREVIOUSSLIDE;
-      robot.keyTap('left');
-      break;
+      childProcess.exec('"/Users/mozilla/.nvm/versions/node/v7.7.2/bin/node" '
+      + './keysend.js left');
+  break;
     case 'npr':
       payload.cmd = FOXY_COMMANDS.NPR;
       ga_params.ea = payload.cmd;
