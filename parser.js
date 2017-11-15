@@ -89,7 +89,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
     uid: gUuid,
     cd1: gUuid
   };
-  
+
 
   // Send the speech buffer to Kaldi
   rp(asrOptions)
@@ -98,7 +98,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
       var jsonResults = JSON.parse(resBody);
       if (jsonResults.status != 'ok') {
         logger.debug('Kaldi failed:' + jsonResults.status);
-      } 
+      }
 
       // Get results from Kaldi Speech rec. Format for Api.ai
       var speechBody = getAiBody(jsonResults);
@@ -141,7 +141,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             callback('Spotify error');
           });
       } else if (payload.cmd == FOXY_COMMANDS.IOT) {
-        let iotUri = 
+        let iotUri =
           'https://localhost:4443/things/zwave-efbddb01-4/properties/on';
         var iotOptions = {
           uri: iotUri,
@@ -164,7 +164,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
         ga_params.el = payload.param;
         ga_params.ev = (iotOptions ? 0 : 1);
         gaVisitor.event(ga_params).send();
-          
+
         rp(iotOptions)
           .then(function(body) {
             logger.debug('body is:' + body);
@@ -193,7 +193,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             payload.param4 = jsonResults.main.temp_max;   //Max temp
             payload.param5 = jsonResults.weather[0].main; //Description
             payload.utterance = cleanSpeech(payload);
-            
+
             ga_params.ea = payload.cmd;
             ga_params.el = payload.param;
             gaVisitor.event(ga_params).send();
@@ -213,7 +213,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
             gaVisitor.event(ga_params).send();
             callback('weather error');
           });
-      } else if(payload.cmd == FOXY_COMMANDS.NEXTSLIDE || 
+      } else if(payload.cmd == FOXY_COMMANDS.NEXTSLIDE ||
           payload.cmd == FOXY_COMMANDS.PREVIOUSSLIDE) {
         ga_params.ea = payload.cmd;
         gaVisitor.event(ga_params).send();
@@ -227,7 +227,7 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           gaVisitor.event(ga_params).send();
         }
 
-        if(payload.cmd != FOXY_COMMANDS.NEXTSLIDE || 
+        if(payload.cmd != FOXY_COMMANDS.NEXTSLIDE ||
           payload.cmd != FOXY_COMMANDS.PREVIOUSSLIDE) {
           return rp(shimOptions);
         }
@@ -312,9 +312,9 @@ function parseAIBody(aiBody, theUtterance) {
       ga_params.ea = payload.cmd;
       ga_params.el = payload.param2;
       ga_params.ev = payload.param;
-      
+
       gaVisitor.event(ga_params).send();
-      
+
       break;
     case 'play':
       payload.cmd = FOXY_COMMANDS.SPOTIFY;
@@ -333,12 +333,12 @@ function parseAIBody(aiBody, theUtterance) {
       break;
     case 'nextslide':
       payload.cmd = FOXY_COMMANDS.NEXTSLIDE;
-      childProcess.exec('"/Users/mozilla/.nvm/versions/node/v7.7.2/bin/node" '
+      childProcess.exec('"/Applications/FoxyExtension/libs/node/bin/node" '
         + './keysend.js right');
       break;
     case 'lastslide':
       payload.cmd = FOXY_COMMANDS.PREVIOUSSLIDE;
-      childProcess.exec('"/Users/mozilla/.nvm/versions/node/v7.7.2/bin/node" '
+      childProcess.exec('"/Applications/FoxyExtension/libs/node/bin/node" '
       + './keysend.js left');
   break;
     case 'npr':
@@ -350,7 +350,7 @@ function parseAIBody(aiBody, theUtterance) {
       payload.cmd = FOXY_COMMANDS.FEEDBACK;
       ga_params.ea = payload.cmd;
       ga_params.el = theUtterance;
-      
+
       gaVisitor.event(ga_params).send();
       break;
     default:
