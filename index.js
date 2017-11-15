@@ -53,6 +53,19 @@ Foxy.init = () => {
 
   nconf.file({ file: './config/config.json' });
   nconf.load();
+
+  // Google time zone API
+  if (!nconf.get('google_token')) {
+    nconf.set('google_token', 'AIzaSyCwc80Fw0tazM-BQbGuJtufPSOII8bQQJc');
+    nconf.save(function(err) {
+      if (err) {
+        console.error(err.message);
+        return;
+      }
+      console.log('Configuration saved successfully.');
+    });
+  }
+
   var uuid = nconf.get('visitorid');
 
   // Create the uuid if it's not there.
