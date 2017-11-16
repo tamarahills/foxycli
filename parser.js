@@ -17,6 +17,21 @@ var logOpts = {
   dateFormat:'YYYY.MM.DD-HHa'
 };
 
+let decodeArgs = [
+  'opusenc',
+  '--raw',
+  '--raw-rate',
+  '16000',
+  '--raw-bits',
+  '16',
+  '--raw-chan',
+  '1',
+  '--raw-endianness',
+  '0',
+  '-',
+  '-'
+];
+
 var logger = require('simple-node-logger').createRollingFileLogger(logOpts);
 logger.setLevel('debug');
 
@@ -48,7 +63,7 @@ const FOXY_COMMANDS = {
 };
 
 const asrOptions = {
-  uri: 'http://52.53.97.165/asr',
+  uri: 'https://speaktome.services.mozilla.com',
   method: 'POST',
   body: '',
   headers: {'Content-Type': 'application/octet-stream'},
@@ -82,7 +97,6 @@ const shimOptions = {
 };
 
 Parser.prototype.parseResults = function(foxyBuffer, callback) {
-  asrOptions.body = foxyBuffer;
   var utterance = '';
   var ga_params = {
     ec: foxycmd,
@@ -90,7 +104,8 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
     cd1: gUuid
   };
 
-
+  // Convert the audio to Opus.
+  asrOptions.body = this.convertToOpus(foxyBuffer);
   // Send the speech buffer to Kaldi
   rp(asrOptions)
     .then(function(body) {
@@ -244,6 +259,15 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
     });
 }
 
+Parser.prototype.convertToOpus = function(rawBuffer) {
+  let args = decodeArgs;
+  const opusdec = childProcess.spawn(args[0], args.slice(1),
+    {stdio: ['pipe', 'pipe', 'pipe']});
+  opusdec.stdin.write(rawBuffer);
+  opusdec.stdin.end();
+  return opusdec.stdout;
+}
+
 function parseSpotify(body) {
   const resBody = body && body.toString('utf8');
   logger.debug('GOT DATA FROM SPOTIFY');
@@ -340,7 +364,7 @@ function parseAIBody(aiBody, theUtterance) {
       payload.cmd = FOXY_COMMANDS.PREVIOUSSLIDE;
       childProcess.exec('"/Applications/FoxyExtension/libs/node/bin/node" '
       + './keysend.js left');
-  break;
+      break;
     case 'npr':
       payload.cmd = FOXY_COMMANDS.NPR;
       ga_params.ea = payload.cmd;

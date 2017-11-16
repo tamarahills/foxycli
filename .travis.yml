@@ -1,6 +1,13 @@
+os:
+  - osx
+
 language: node_js
 
 sudo: required
+
+before_install:
+  - brew update
+  - brew install opus-tools
 
 script:
   - npm install
