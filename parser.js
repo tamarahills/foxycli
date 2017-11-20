@@ -370,6 +370,11 @@ function parseAIBody(aiBody, theUtterance) {
       ga_params.ea = payload.cmd;
       gaVisitor.event(ga_params).send();
       break;
+    case 'bookmark':
+      payload.cmd = FOXY_COMMANDS.BOOKMARK;
+      ga_params.ea = payload.cmd;
+      gaVisitor.event(ga_params).send();
+      break;
     case 'feedback':
       payload.cmd = FOXY_COMMANDS.FEEDBACK;
       ga_params.ea = payload.cmd;
