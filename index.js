@@ -9,6 +9,7 @@ const nconf = require('nconf');
 const uuidv4 =  require('uuid/v4');
 const rp = require('request-promise');
 const findRemoveSync = require('find-remove');
+const { join } = require('path');
 
 var logOpts = {
   logDirectory: __dirname + '/logs' ,
@@ -51,7 +52,7 @@ var parser = new Parser.Parser();
 
 Foxy.init = () => {
 
-  nconf.file({ file: './config/config.json' });
+  nconf.file({ file: join(__dirname, 'config/config.json') });
   nconf.load();
 
   // Google time zone API
@@ -91,13 +92,13 @@ Foxy.init = () => {
   //   uid: uuid
   // };
   // visitor.event(ga_params).send();
-  
+
   //Send the GA property info to the extension. NEED TO START EXTENSION FIRST
   var payload = {
     cmd: 'GA',
     param: nconf.get('GAProperty'),
     param2: uuid
-  };  
+  };
 
   shimOptions.body = JSON.stringify(payload);
   rp(shimOptions);
@@ -117,7 +118,7 @@ Foxy.init = () => {
   } else {
     console.log('silence count is: ' + sCount);
     maxSilence = sCount;
-  } 
+  }
 
   const opts = Object.assign({}),
     models = new Models(),
@@ -159,14 +160,14 @@ Foxy.init = () => {
   console.log('Gain is: ' + audioGain);
 
   models.add({
-    file:  'resources/Hey_Foxy.pmdl',
+    file: join(__dirname, 'resources/Hey_Foxy.pmdl'),
     sensitivity: wwSensitivity,
     hotwords: 'Hey Foxy'
   });
 
   // defaults
   opts.models = models
-  opts.resource = 'resources/common.res'
+  opts.resource = join(__dirname, 'resources/common.res');
   opts.audioGain =  audioGain
   opts.language =  'en-US'
 
@@ -241,7 +242,7 @@ Foxy.start = foxy => {
 
   // Clear out any of the logs that are older than 3 hours
   setInterval(function() {
-    findRemoveSync(__dirname + '/logs', {age: {seconds: 10800}, 
+    findRemoveSync(__dirname + '/logs', {age: {seconds: 10800},
       extensions: '.log'})
   }, 3600000);
 
