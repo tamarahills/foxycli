@@ -10,6 +10,7 @@ const foxycmderror = 'foxycmderror';
 var SpotifyConn= require('./spotify');
 const timezone = require('./libs/timezone');
 var childProcess = require('child_process');
+const { keyTap } = require('robotjs');
 
 var logOpts = {
   logDirectory: __dirname + '/logs' ,
@@ -357,13 +358,11 @@ function parseAIBody(aiBody, theUtterance) {
       break;
     case 'nextslide':
       payload.cmd = FOXY_COMMANDS.NEXTSLIDE;
-      childProcess.exec('"/Applications/FoxyExtension/libs/node/bin/node" '
-        + './keysend.js right');
+      keyTap('right');
       break;
     case 'lastslide':
       payload.cmd = FOXY_COMMANDS.PREVIOUSSLIDE;
-      childProcess.exec('"/Applications/FoxyExtension/libs/node/bin/node" '
-      + './keysend.js left');
+      keyTap('left');
       break;
     case 'npr':
       payload.cmd = FOXY_COMMANDS.NPR;
