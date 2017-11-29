@@ -126,7 +126,8 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
     .then(function(aiBody) {
       var payload = parseAIBody(aiBody, utterance);
       payload.utterance = utterance;
-      if(payload.cmd == FOXY_COMMANDS.SPOTIFY) {
+      if (payload.cmd == FOXY_COMMANDS.SPOTIFY && payload.param != 'none') {
+        logger.debug('Spotify cmd for genre');
         let playlistBrowseUri = 'https://api.spotify.com/v1/browse/categories/'
           + payload.param + '/playlists';
         var spotifyCategoryPlaylistOptions = {
@@ -135,26 +136,71 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
           headers: {'Authorization': 'Bearer ' + SpotifyConn.apiToken}
         };
         rp(spotifyCategoryPlaylistOptions)
-          .then(function(body) {
-            payload.param = parseSpotify(body);
-            payload.utterance = cleanSpeech(payload);
-            shimOptions.body = JSON.stringify(payload);
-            if (payload.param == '') {
-              ga_params.ec = 'foxycmderror';
-              ga_params.ea = payload.cmd;
-              ga_params.el = payload.utterance;
-              gaVisitor.event(ga_params).send();
-            } else {
-              ga_params.ea = payload.cmd;
-              ga_params.el = payload.param;
-              gaVisitor.event(ga_params).send();
-            }
-            return rp(shimOptions);
-          })
-          .catch(function(err) {
-            logger.debug('Spotify error:' + err);
-            callback('Spotify error');
-          });
+        .then(function(body) {
+          payload.param = parseSpotify(body);
+          payload.utterance = cleanSpeech(payload);
+          shimOptions.body = JSON.stringify(payload);
+          if (payload.param == '') {
+            ga_params.ec = 'foxycmderror';
+            ga_params.ea = payload.cmd;
+            ga_params.el = payload.utterance;
+            gaVisitor.event(ga_params).send();
+          } else {
+            ga_params.ea = payload.cmd;
+            ga_params.el = payload.param;
+            gaVisitor.event(ga_params).send();
+          }
+          return rp(shimOptions);
+        })
+        .catch(function(err) {
+          logger.debug('Spotify error:' + err);
+          callback('Spotify error');
+        });
+      } else if (payload.cmd == FOXY_COMMANDS.SPOTIFY &&
+        payload.param2 != 'none') {
+        logger.debug('Spotify cmd for artist');
+        // Search for the artist
+        var spotifyArtistSearchOptions = {
+          uri: 'https://api.spotify.com/v1/search?type=artist&q=' +
+            encodeURIComponent(payload.param2),
+          method: 'GET',
+          headers: {'Authorization': 'Bearer ' + SpotifyConn.apiToken}
+        };
+        logger.debug('artist uri is: ' + spotifyArtistSearchOptions.uri);
+        rp(spotifyArtistSearchOptions)
+        .then(function(body) {
+          logger.debug('Found an artist.  Getting it');
+          var spotifyArtistPlaylist = {
+            uri: 'https://api.spotify.com/v1/artists/' +
+              parseArtistIdMatches(body),
+            method: 'GET',
+            headers: {'Authorization': 'Bearer ' + SpotifyConn.apiToken}
+          };
+          logger.debug('Found an artist.  Getting it');
+          return rp(spotifyArtistPlaylist);
+        })
+        .then(function(body) {
+          logger.debug('Found an artist playlist.  Getting it');
+          payload.param = parseArtistPlaylist(body);
+          logger.debug('Artist playlist is: ' + payload.param);
+          payload.utterance = cleanSpeech(payload);
+          shimOptions.body = JSON.stringify(payload);
+          if (payload.param == '') {
+            ga_params.ec = 'foxycmderror';
+            ga_params.ea = payload.cmd;
+            ga_params.el = payload.utterance;
+            gaVisitor.event(ga_params).send();
+          } else {
+            ga_params.ea = payload.cmd;
+            ga_params.el = payload.param;
+            gaVisitor.event(ga_params).send();
+          }
+          return rp(shimOptions);
+        })
+        .catch(function(err) {
+          logger.debug('Spotify error:' + err);
+          callback('Spotify error');
+        });
       } else if (payload.cmd == FOXY_COMMANDS.IOT) {
         let iotUri =
           'https://localhost:4443/things/zwave-efbddb01-4/properties/on';
@@ -181,21 +227,21 @@ Parser.prototype.parseResults = function(foxyBuffer, callback) {
         gaVisitor.event(ga_params).send();
 
         rp(iotOptions)
-          .then(function(body) {
-            logger.debug('body is:' + body);
-            shimOptions.body = JSON.stringify(payload);
-            payload.utterance = cleanSpeech(payload);
-            shimOptions.body = JSON.stringify(payload);
-            return rp(shimOptions);
-          })
-          .catch(function(err) {
-            logger.debug('iot error is:' + err);
-            ga_params.ec = foxycmderror;
-            ga_params.ea = payload.cmd;
-            ga_params.el = payload.utterance;
-            gaVisitor.event(ga_params).send();
-            callback('iot error');
-          });
+        .then(function(body) {
+          logger.debug('body is:' + body);
+          shimOptions.body = JSON.stringify(payload);
+          payload.utterance = cleanSpeech(payload);
+          shimOptions.body = JSON.stringify(payload);
+          return rp(shimOptions);
+        })
+        .catch(function(err) {
+          logger.debug('iot error is:' + err);
+          ga_params.ec = foxycmderror;
+          ga_params.ea = payload.cmd;
+          ga_params.el = payload.utterance;
+          gaVisitor.event(ga_params).send();
+          callback('iot error');
+        });
       } else if (payload.cmd == FOXY_COMMANDS.WEATHER) {
         weatherOptions.uri = weatherLink + payload.param;
 
@@ -268,6 +314,26 @@ Parser.prototype.convertToOpus = function(rawBuffer) {
   return opusdec.stdout;
 }
 
+function parseArtistIdMatches(body) {
+  const resBody = body && body.toString('utf8');
+  var jsonResults = JSON.parse(resBody);
+  let plArray = jsonResults.artists.items;
+  if (plArray.length)
+    return plArray[0].id;
+  else
+    return '';
+}
+
+function parseArtistPlaylist(body) {
+  const resBody = body && body.toString('utf8');
+  var jsonResults = JSON.parse(resBody);
+  let uri = '';
+  if (jsonResults.id) {
+    uri = 'spotify:artist:' + jsonResults.id;
+  }
+  return uri;
+}
+
 function parseSpotify(body) {
   const resBody = body && body.toString('utf8');
   logger.debug('GOT DATA FROM SPOTIFY');
@@ -278,7 +344,7 @@ function parseSpotify(body) {
     var obj = plArray[i];
     if (obj.type == 'playlist') {
       logger.debug('Found a playlist: ' + obj.id);
-      playlistId = obj.id;
+      playlistId = 'spotify:user:spotify:playlist:' + obj.id;
       break;
     }
   }
@@ -342,7 +408,11 @@ function parseAIBody(aiBody, theUtterance) {
       break;
     case 'play':
       payload.cmd = FOXY_COMMANDS.SPOTIFY;
-      payload.param = jsonBody.result.parameters['music-genre'];
+      if (jsonBody.result.parameters['music-genre']) {
+        payload.param = jsonBody.result.parameters['music-genre'];
+      } else {
+        payload.param2 = jsonBody.result.parameters['music-artist'];
+      }
       break;
     case 'iot':
       payload.cmd = FOXY_COMMANDS.IOT;
