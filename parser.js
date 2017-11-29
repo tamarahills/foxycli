@@ -60,7 +60,8 @@ const FOXY_COMMANDS = {
   'POCKET': 'POCKET',
   'NPR': 'NPR',
   'GA': 'GA',
-  'FEEDBACK': 'FEEDBACK'
+  'FEEDBACK': 'FEEDBACK',
+  'SCREENSHOT': 'SCREENSHOT'
 };
 
 const asrOptions = {
@@ -371,6 +372,11 @@ function parseAIBody(aiBody, theUtterance) {
       break;
     case 'bookmark':
       payload.cmd = FOXY_COMMANDS.BOOKMARK;
+      ga_params.ea = payload.cmd;
+      gaVisitor.event(ga_params).send();
+      break;
+    case 'screenshot':
+      payload.cmd = FOXY_COMMANDS.SCREENSHOT;
       ga_params.ea = payload.cmd;
       gaVisitor.event(ga_params).send();
       break;
